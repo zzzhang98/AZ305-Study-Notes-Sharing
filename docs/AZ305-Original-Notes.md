@@ -19,15 +19,15 @@
         
         | Insight | Description |
         | --- | --- |
-| Application Insight | Azure Monitor が提供する拡張可能なアプリケーション パフォーマンス管理（APM）サービス。あらゆるプラットフォーム上の Web アプリをリアルタイムで監視する |
-| Container Insight | Azure Container Instances または Azure Kubernetes Service（AKS）上の Kubernetes クラスターにデプロイされたコンテナー ワークロードのパフォーマンスを確認する |
-| Networks Insight | すべてのネットワーク リソースの正常性とメトリックを包括的に把握する。高度な検索でリソース間の依存関係を特定し、Web サイト名からホスト リソースを検索できる |
-| Resource Group Insight | 各リソースの問題をトリアージして診断し、リソース グループ全体の正常性とパフォーマンスの状況を確認する |
-| VM Insight | Azure 仮想マシンや仮想マシン スケール セットの Windows / Linux のパフォーマンスと正常性を分析し、プロセスや他リソース・外部プロセスへの依存関係を監視する |
-| Azure Cache for Redis Insight | データベース クエリのキャッシュ、セッション保存、リアルタイム ランキングなどに利用する。キャッシュによりデータをより速く利用できる |
-| Azure Cosmos DB Insight | 統合された対話型エクスペリエンスで、すべての Azure Cosmos DB リソースのパフォーマンス、障害、容量、運用上の正常性を把握する |
-| Azure Key Vault Insight | Key Vault の要求、パフォーマンス、障害、待機時間を統合レポートで監視する |
-| Azure Storage Insight | ストレージ アカウントのパフォーマンス、容量、可用性を統合レポートで包括的に監視する |
+        | Application Insight | Azure Monitor が提供する拡張可能なアプリケーション パフォーマンス管理（APM）サービス。あらゆるプラットフォーム上の Web アプリをリアルタイムで監視する |
+        | Container Insight | Azure Container Instances または Azure Kubernetes Service（AKS）上の Kubernetes クラスターにデプロイされたコンテナー ワークロードのパフォーマンスを確認する |
+        | Networks Insight | すべてのネットワーク リソースの正常性とメトリックを包括的に把握する。高度な検索でリソース間の依存関係を特定し、Web サイト名からホスト リソースを検索できる |
+        | Resource Group Insight | 各リソースの問題をトリアージして診断し、リソース グループ全体の正常性とパフォーマンスの状況を確認する |
+        | VM Insight | Azure 仮想マシンや仮想マシン スケール セットの Windows / Linux のパフォーマンスと正常性を分析し、プロセスや他リソース・外部プロセスへの依存関係を監視する |
+        | Azure Cache for Redis Insight | データベース クエリのキャッシュ、セッション保存、リアルタイム ランキングなどに利用する。キャッシュによりデータをより速く利用できる |
+        | Azure Cosmos DB Insight | 統合された対話型エクスペリエンスで、すべての Azure Cosmos DB リソースのパフォーマンス、障害、容量、運用上の正常性を把握する |
+        | Azure Key Vault Insight | Key Vault の要求、パフォーマンス、障害、待機時間を統合レポートで監視する |
+        | Azure Storage Insight | ストレージ アカウントのパフォーマンス、容量、可用性を統合レポートで包括的に監視する |
     - パートナーツールでの分析：Azure Monitorの監視データを外部の監視サービスで分析することもできる **Azure Event Hubs**
 - Azure Monitorログによる監視データの分析手順
     1. **Log Analytics Workspaceを作成する**：Log Analytics WorkspaceはAzure Monitorログ専用のデータストア
