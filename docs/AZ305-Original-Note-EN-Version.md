@@ -1,767 +1,717 @@
 # AZ305 Original Notes
 
-### ID、ガバナンス、及び監視ソリューションを設計する（25~30%）
+### Design identity, governance, and monitoring solutions (25–30%)
 
 ### **Azure Monitor**
 
 ![image.png](../images/az305-01.png)
 
-- データ種別
-    - メトリック：数値データ、軽量、リアルタイムに近い収集頻度、アラート
-    - ログ：テキストまたは数値データ、イベント発生時などに散発的に収集、原因分析
-    - 分散トレース：監視対象となるアプリ内の個々のコンポーネントのやり取りを追跡するもの
-    - 変更点：監視対象となるリソースの様々な変更を記録したもの
-- Azure Monitorによる監視データの活用
-    - 通知と自動処理：異常なメトリックやログを検出し、自動的に警告を発する
-    - 可視化：Azure Workbooksを使用し、監視データを手軽に可視化する
-    - より詳細な分析：Azure Monitor Insights
-        
-        
-        | Insight | Description |
-        | --- | --- |
-| Application Insight | Azure Monitor が提供する拡張可能なアプリケーション パフォーマンス管理（APM）サービス。あらゆるプラットフォーム上の Web アプリをリアルタイムで監視する |
-| Container Insight | Azure Container Instances または Azure Kubernetes Service（AKS）上の Kubernetes クラスターにデプロイされたコンテナー ワークロードのパフォーマンスを確認する |
-| Networks Insight | すべてのネットワーク リソースの正常性とメトリックを包括的に把握する。高度な検索でリソース間の依存関係を特定し、Web サイト名からホスト リソースを検索できる |
-| Resource Group Insight | 各リソースの問題をトリアージして診断し、リソース グループ全体の正常性とパフォーマンスの状況を確認する |
-| VM Insight | Azure 仮想マシンや仮想マシン スケール セットの Windows / Linux のパフォーマンスと正常性を分析し、プロセスや他リソース・外部プロセスへの依存関係を監視する |
-| Azure Cache for Redis Insight | データベース クエリのキャッシュ、セッション保存、リアルタイム ランキングなどに利用する。キャッシュによりデータをより速く利用できる |
-| Azure Cosmos DB Insight | 統合された対話型エクスペリエンスで、すべての Azure Cosmos DB リソースのパフォーマンス、障害、容量、運用上の正常性を把握する |
-| Azure Key Vault Insight | Key Vault の要求、パフォーマンス、障害、待機時間を統合レポートで監視する |
-| Azure Storage Insight | ストレージ アカウントのパフォーマンス、容量、可用性を統合レポートで包括的に監視する |
-    - パートナーツールでの分析：Azure Monitorの監視データを外部の監視サービスで分析することもできる **Azure Event Hubs**
-- Azure Monitorログによる監視データの分析手順
-    1. **Log Analytics Workspaceを作成する**：Log Analytics WorkspaceはAzure Monitorログ専用のデータストア
-        
-        
-        | 価格レベル | 説明 |
-        | --- | --- |
-        | 従量課金制モデル | 既定の価格レベル |
-        | コミットメントレベル | 予めデータボリュームを予約することで、従量課金制モデルよりも30%の割引である
-        1日あたり100GBから50TB |
-        
-        **一つのLog Analytics workspaceを用意すれば、仮想マシンの監視、ネットワークの監視、ストレージの監視など、複数の用途で使用することができる。複数のInsightsで、一つのLog Analytics Workspaceを共有利用することが可能**
-        
-    2. ComputerにAzure Monitor Agent（AMA)をインストールする
-    3. データ収集ルール（Data Collection Rule DCR) を作成する：
-        1. 収集可能なデータソース
-            - Heartbeat：エージェントの正常性を示すログ
-            - Perf：パフォーマンスカウンター
-            - **Event：Windowsのイベントログ**
-            - **Syslog：Linuxのイベントログ**
-            - W3CIISLog: Internet Information Servicesテキストファイルのログを収集
-            - テーブル名_CL (Custom Log): text file logを収集する。例えばApacheのアクセスログを収集する
-        2. DCR実体は、JSONで、このJSONドキュメントをカスタマイズすることで、監視データをフィルタリングしたり、加工した上で、Log Analytics Workspaceに格納することができます
-            - データをフィルタリングして必要なデータだけを収集するには、DCR内にXPath (XML Path Language) クエリーを記述する
-            - **データを加工するには、KQL (Kusto Query Language)クエリーを記述する**
-            - DCRでは、データソースがカスタムログまたはIISの場合、「Data collection endpoint DCE 」を指定する。DCEはAzure Monitor Agentがデータを送信する先であり、事前に作成しておく必要がある
-            - **DCRとDCEはリージョンごとに作成する必要がある**
-    4. データを分析する：
-        1. ログの保持期間は30日から730日(２年)の間で設定可能。最大12年間のログを保持するアーカイブがある
-    5. Azureの監視データを収集する
+- Data types
+  - Metrics: Numeric data; lightweight; collected near real time; used for alerting.
+  - Logs: Text or numeric data collected intermittently, such as when events occur; used for root-cause analysis.
+  - Distributed traces: Track interactions among individual components within a monitored application.
+  - Changes: Record various changes to monitored resources.
+- Using monitoring data with Azure Monitor
+  - Alerts and automated actions: Detect abnormal metrics or logs and automatically issue alerts.
+  - Visualization: Use Azure Workbooks to easily visualize monitoring data.
+  - Deeper analysis: Azure Monitor Insights
 
-#### Azureの認証ソリューションとMicrosoft Entra
-
-1. Microsoft Entra：Microsoft EntraはID管理とアクセス管理製品のファミリーです
-    
-    
-    | サービス | 説明 |
+    | Insight | Description |
     | --- | --- |
-    | Microsoft Entra ID=Azure Active Directory (Azure AD)  | Microsoft Entraの中心的なサービス。クラウドベースのID管理を行う |
-    | Microsoft Entra Domain Services | WindowsのActive DirtectoryドメインコントローラーをAzureで簡単に展開できる |
-    | Microsoft Entra Private Access | オンプレミスのアプリにインターネットから安全にアクセスできる |
-    | Microsoft Entra Internet Access | WebコンテンツフィルタリングによりSaaSアプリへの安全なアクセスを実現する |
-    | Microsoft Entra ID Governance | ID、アクセス権、特権のライフサイクルを管理する |
-    | Microsoft Entra ID保護 | 機器学習を使ってIDを保護する |
-    | Microsoft Entra Verified ID | デジタル資格情報の発行と検証を行う |
-    | Microsoft Entra外部ID | 組織間でアクセスやアプリを共有する際、ゲストユーザーではなくEntraテナント間で信頼関係を結ぶ |
-    | Microsoft Entra Permissions Management | マルチクラウドのアクセス権の管理、可視化、過剰な権限の検出を行う
-    このようなソリューションはCIEM Cloud Infrastructure Entitlement Management呼ぶ |
-    | Microsoft Entra ワークロードID | ワークロード用のIDに対して、条件付きアクセス、ID保護、アクセスレビューを提供 |
-2. 外部ユーザー管理：直接Entraテナントにそれらのメンバーユーザーを作成することは、推奨されません
-    1. ゲストユーザー：Entraテナントに作成できる特別なユーザーです
-    2. **Azure Lighthouse：外部の Entra テナントのユーザーやグループに、自社の Azure サブスクリプションへのアクセス権を簡単に割り当てられます。（イベント ログの収集）Azure Lighthouse はテナントをまたいで Azure リソースを管理するサービスであり、異なるテナントにリンクされた複数のサブスクリプションからイベント ログを収集する用途に適しています。**
-3. シングルサインオン：
-    1. Federation SSO：Entra IDは、SAML (Security Assertion Markup Language）やOpenID Connectなどのシングルサインオン規格をサポートしています。
-    2. Password Based SSO：EntraIDでは、ユーザーが開発したシンプルなアプリのSSOも可能です
-4. Microsoft Entra Connect：多くの企業では、オンプレミス（企業内ネットワーク）のユーザー管理サービスとして、Windows Serverの標準機能であるActive Directory Domain Serviceを採用する。Entraテナントを導入するサービスが、Microsoft Entra Connectにより、AD DSのユーザーとグループをEntraテナントへ定期的にコピーできます
-    1. Password WriteBack: クラウドで変更したパスワードをオンプレミスの Active Directory に書き戻す機能です。オンプレミスとクラウドのパスワードを同期し、ヘルプデスクによる手動管理の負担を減らします。
-    2. Self-service password reset: ユーザーがヘルプデスクに連絡せずに自分でパスワードをリセットできます。ヘルプデスクの負担を軽減し、ユーザー自身による効率的な管理を可能にして、ネットワーク インフラの運用コストを抑えます。
-5. Microsoft Entra Connect Health：Microsoft Entra Connectの複数コンポーネントを一元的に監視するサービス
-6. **Microsoft Entra Application Proxy：外部ユーザーが VPN を使わずに社内 Web アプリへアクセスできるよう、オンプレミスの内部 Web アプリケーションをインターネットに安全に公開します。**
-7. **Microsoft Entra ID Governance：**
-    1. **Entitlement Management：従業員の入社、昇格、異動、退職などのライフサイクルに応じて、必要な権限をアクセス権として自動的に割り当てる機能です**
-    2. **Access Review：アクセス権限の定期的に評価する**
-8. Microsoft Entra Managed Identity：自分の Azure アプリ／リソースが別の Azure リソースにアクセスするとき、どのように認証するか。
-9. Microsoft App Registration：App1 を Entra ID に登録してアプリを認識させます。ユーザーがアプリにアクセスするとき、Entra ID による認証／SSO を利用できます。
+    | Application Insights | An extensible application performance management (APM) service provided by Azure Monitor. Monitors web apps on any platform in real time. |
+    | Container Insights | Shows the performance of container workloads deployed to Azure Container Instances or Kubernetes clusters on Azure Kubernetes Service (AKS). |
+    | Network Insights | Provides a comprehensive view of the health and metrics of all network resources. Advanced search can identify dependencies between resources and find a host resource from a website name. |
+    | Resource Group Insights | Triages and diagnoses issues with individual resources and shows the health and performance of an entire resource group. |
+    | VM Insights | Analyzes Windows/Linux performance and health for Azure virtual machines and virtual machine scale sets, and monitors dependencies on processes, other resources, and external processes. |
+    | Azure Cache for Redis Insights | Supports scenarios such as caching database queries, storing sessions, and real-time ranking. Caching provides faster access to data. |
+    | Azure Cosmos DB Insights | Provides a unified interactive experience for viewing performance, failures, capacity, and operational health across Azure Cosmos DB resources. |
+    | Azure Key Vault Insights | Monitors Key Vault requests, performance, failures, and latency in a consolidated report. |
+    | Azure Storage Insights | Comprehensively monitors storage account performance, capacity, and availability in a consolidated report. |
+  - Analysis with partner tools: Azure Monitor data can also be analyzed by external monitoring services, such as **Azure Event Hubs**.
+- Steps for analyzing monitoring data with Azure Monitor Logs
+  1. **Create a Log Analytics workspace**: A Log Analytics workspace is a data store dedicated to Azure Monitor Logs.
+
+     | Pricing tier | Description |
+     | --- | --- |
+     | Pay-as-you-go | The default pricing tier. |
+     | Commitment tier | Reserve a data volume in advance for a 30% discount compared with pay-as-you-go. From 100 GB to 50 TB per day. |
+
+     **A single Log Analytics workspace can serve multiple purposes, such as monitoring virtual machines, networks, and storage. Multiple Insights can share one Log Analytics workspace.**
+  2. Install the Azure Monitor Agent (AMA) on the computer.
+  3. Create a Data Collection Rule (DCR):
+     1. Supported data sources:
+        - Heartbeat: A log indicating agent health.
+        - Perf: Performance counters.
+        - **Event: Windows event logs.**
+        - **Syslog: Linux event logs.**
+        - W3CIISLog: Collects Internet Information Services text-file logs.
+        - Table name ending in `_CL` (Custom Log): Collects text-file logs, such as Apache access logs.
+     2. A DCR is represented as JSON. Customize this JSON document to filter or transform monitoring data before storing it in a Log Analytics workspace.
+        - To filter data and collect only what is needed, write an XPath (XML Path Language) query in the DCR.
+        - **To transform data, write a KQL (Kusto Query Language) query.**
+        - For custom log or IIS data sources, specify a Data Collection Endpoint (DCE) in the DCR. The DCE is the destination to which the Azure Monitor Agent sends data and must be created in advance.
+        - **DCRs and DCEs must be created for each region.**
+  4. Analyze the data:
+     - Log retention can be configured from 30 to 730 days (two years). An archive tier can retain logs for up to 12 years.
+  5. Collect Azure monitoring data.
+
+#### Azure authentication solutions and Microsoft Entra
+
+1. Microsoft Entra is a family of identity and access management products.
+
+   | Service | Description |
+   | --- | --- |
+   | Microsoft Entra ID (formerly Azure Active Directory/Azure AD) | The core Microsoft Entra service; provides cloud-based identity management. |
+   | Microsoft Entra Domain Services | Makes it easy to deploy Windows Active Directory domain controllers in Azure. |
+   | Microsoft Entra Private Access | Provides secure internet access to on-premises applications. |
+   | Microsoft Entra Internet Access | Provides secure access to SaaS apps through web content filtering. |
+   | Microsoft Entra ID Governance | Manages the lifecycle of identities, access rights, and privileges. |
+   | Microsoft Entra ID Protection | Protects identities using machine learning. |
+   | Microsoft Entra Verified ID | Issues and verifies digital credentials. |
+   | Microsoft Entra External ID | Establishes trust between Entra tenants when sharing access or apps between organizations, instead of creating guest users. |
+   | Microsoft Entra Permissions Management | Manages and visualizes multicloud permissions and detects excessive permissions. This type of solution is called CIEM (Cloud Infrastructure Entitlement Management). |
+   | Microsoft Entra Workload ID | Provides Conditional Access, Identity Protection, and access reviews for workload identities. |
+2. Managing external users: Creating member users for external organizations directly in your Entra tenant is not recommended.
+   1. Guest users: Special users that can be created in an Entra tenant.
+   2. **Azure Lighthouse: Easily assign users or groups from an external Entra tenant access to your Azure subscriptions. (Event log collection) Azure Lighthouse is a service for managing Azure resources across tenants and is suitable for collecting event logs from multiple subscriptions linked to different tenants.**
+3. Single sign-on (SSO):
+   1. Federation SSO: Entra ID supports SSO standards such as SAML (Security Assertion Markup Language) and OpenID Connect.
+   2. Password-based SSO: Entra ID can also provide SSO for simple apps developed by users.
+4. Microsoft Entra Connect: Many companies use Active Directory Domain Services (AD DS), a standard Windows Server feature, to manage users on-premises (within the corporate network). Microsoft Entra Connect can periodically copy AD DS users and groups to an Entra tenant.
+   1. Password writeback: Writes passwords changed in the cloud back to on-premises Active Directory. Synchronizing on-premises and cloud passwords reduces manual help desk work.
+   2. Self-service password reset: Users can reset their own passwords without contacting the help desk. This reduces help desk workload, enables users to manage their accounts efficiently, and helps lower network infrastructure operating costs.
+5. Microsoft Entra Connect Health: Centrally monitors multiple Microsoft Entra Connect components.
+6. **Microsoft Entra Application Proxy: Securely publishes internal on-premises web applications to the internet so external users can access them without a VPN.**
+7. **Microsoft Entra ID Governance:**
+   1. **Entitlement Management: Automatically assigns the access rights employees need based on their lifecycle, such as joining, promotion, transfer, or departure.**
+   2. **Access Review: Periodically evaluates access permissions.**
+8. Microsoft Entra Managed Identity: Defines how an Azure app/resource authenticates when it accesses another Azure resource.
+9. Microsoft App Registration: Registers App1 with Entra ID so it is recognized. When users access the app, they can use Entra ID authentication/SSO.
 
 ![image.png](../images/az305-02.png)
 
-#### Azureの認可ソリューション (Role Based Access Control)
+#### Azure authorization solutions (Role-Based Access Control)
 
-1. Azureロール：Owner, Co-Contributor, Reader
-2. Microsoft Entraロール：
-    
-    
-    | 組み込みロール | 説明 |
-    | --- | --- |
-    | 全体管理者　global admin | Entra IDのすべてを管理できる |
-    | ユーザー管理者　global viewer | ユーザーとグループを管理できる |
-    | ヘルプデスク管理者　user admin | ユーザーのパスワードをリセットできる |
-    | 課金管理者 | 請求と支払いを管理できる |
-3. 条件付きアクセス：AzureロールやMicrosoft Entraロールに条件を追加することでセキュリティを強化する機能です。
-4. **Microsoft Entra Privileged Identity Management (PIM)：AzureロールやMicrosoft Entraロールは、「特権」が悪用されないように保護するサービスです。**
-    1. **ユーザが必要となったタイミングで割り当てて、有効期間内にみ利用できるようにする「Just-in-Timeアクセス」を提供**
-5. Azure Bicep は、宣言型の方法で Azure リソースをデプロイするドメイン固有言語です。管理グループ、サブスクリプション、リソース グループなど、必要なコンポーネントを構造化された再現可能な方法で定義・デプロイできます。Azure Bicep を使うと、問題で示された Azure 環境全体を最小限の運用負荷で簡単に構成できます。
+1. Azure roles: Owner, Co-Contributor, Reader.
+2. Microsoft Entra roles:
 
-#### Azure Storageの認証・認可ソリューション
+   | Built-in role | Description |
+   | --- | --- |
+   | Global Administrator | Can manage everything in Entra ID. |
+   | User Administrator (listed as “global viewer” in the source notes) | Can manage users and groups. |
+   | Helpdesk Administrator (listed as “user admin” in the source notes) | Can reset user passwords. |
+   | Billing Administrator | Manages billing and payments. |
+3. Conditional Access: A feature that strengthens security by adding conditions to Azure roles or Microsoft Entra roles.
+4. **Microsoft Entra Privileged Identity Management (PIM): Protects Azure roles and Microsoft Entra roles from misuse of privileges.**
+   1. **Provides just-in-time access: Assign a role when a user needs it and allow its use only during the active period.**
+5. Azure Bicep is a domain-specific language for declaratively deploying Azure resources. It can define and deploy required components—such as management groups, subscriptions, and resource groups—in a structured, repeatable way. Bicep makes it easy to configure the Azure environment described in a scenario with minimal operational overhead.
 
-1. ABAC：Attribute Based Access Control → Azure BlobとAzure Queueのみ対応
-    1. カスタムロールを使えば、タグなどの属性を条件とし、ストレージアカウント内の個々のデータにアクセス権を定義する
-2. アクセスキー：ストレージアカウントへのフルアクセスが可能な512ビットの文字列
-3. SAS：リソースへのアクセス権や有効期限を含む特別な文字列
-    
-    
-    | SAS | 説明 |
-    | --- | --- |
-    | アカウントSAS | Azure storageのBlob, files, Queue, Tableのうち、一つのサービスのリソースのみにアクセスできる。共有キーで署名される |
-    | サービスSAS | Azure StorageのBlob, files, Queue, Tableの複数サービスのリソースにアクセスできる。共有キーで署名される |
-    | ユーザ委任SAS | Azure StorageのBlobサービスのリソースのみにアクセスできる。 |
+#### Authentication and authorization for Azure Storage
 
-#### アプリケーションの認証と認可
+1. ABAC (Attribute-Based Access Control): Supported only for Azure Blob and Azure Queue.
+   1. Custom roles can use attributes such as tags as conditions to define access to individual data items in a storage account.
+2. Access key: A 512-bit string that provides full access to a storage account.
+3. SAS: A special string containing resource permissions and an expiration time.
 
-1. アプリ登録：Azure外で実行されるアプリを対象に、EntraテナントにそのIDを作成する機能です
-2.  マネージドID：Entraテナントにアプリ用のIDを作成し、Azure内のアプリに割り当てる機能です
-    1. 具体的には、仮想マシンやApp Service, Azure Functionsなどのリソースに対して マネージドIDを割り当てることができ、これらのリソース内のアプリにIDを引き継ぐことが可能
-    2. **マネージドIDの種類：**
-    
-    ![image.png](../images/az305-03.png)
-    
-3. Service Principal
-    
-    ![image.png](../images/az305-04.png)
-    
+   | SAS type | Description |
+   | --- | --- |
+   | Account SAS | Can access resources in one of the Azure Storage services—Blob, Files, Queue, or Table. Signed with a shared key. |
+   | Service SAS | Can access resources across multiple Azure Storage services—Blob, Files, Queue, and Table. Signed with a shared key. |
+   | User delegation SAS | Can access resources only in the Azure Storage Blob service. |
 
-#### コンプライアンス管理のソリューション
+#### Application authentication and authorization
 
-コンプライアンス管理とは、法律や、組織・業界のガイドラインに準拠するための継続的な管理のこと
+1. App registration: Creates an identity for an application running outside Azure in an Entra tenant.
+2. Managed identity: Creates an app identity in an Entra tenant and assigns it to an application in Azure.
+   1. A managed identity can be assigned to resources such as virtual machines, App Service, and Azure Functions, and passed to apps running within those resources.
+   2. **Types of managed identities:**
 
-1. Azure Policy：Azureの各リソースがビジネスルールに準拠するよう統制するサービスです
-2. 適用手順：
-    1. Policy Definition:
-        
-        
-        | 効果 effect | 説明 |
-        | --- | --- |
-        | append | リソースのプロパティの変更を許可する |
-        | deny | リソースのプロパティの変更を禁止する |
-        | audit | Activity logにイベントを記録する（リソースは変更しない） |
-        | auditIfNotExists | 関連するリソースがなかった場合、ActivityLogにイベントを記録する |
-        | deployIfNotExits | 関連するリソースがなかった場合、リソースを作成する |
-        | disabled | ポリシーを無効にする（テスト用） |
-        | modify | リソースのタグを変更する ⭐ タグなどの属性を変更または追加する |
-    2. Initiative Definition
-    3. ポリシー定義またはイニシアチブ定義をスコープに割り当てる Assignment: 
-        - ポリシー定義が多数ある場合、一つ一つを割り当てると手間がかかります。この時、「イニシアチブ定義」を使用すれば、複数のポリシーをグループ化し、割り当てを一回にまとめることができる
-    4. Evaluation：
-        - Azure policyはリソースに変更が加えられた時にリアルタイム評価スキャンを行ったり、定期的にバックグラウンド評価スキャンを行います。Azure CLIやAzure PowerShellを使用すれば、オンデマンドの評価スキャンも実行できます
+![image.png](../images/az305-03.png)
 
-#### Secret管理ソリューション
+3. Service principal
 
-1. Azure Key Vault：
+![image.png](../images/az305-04.png)
 
-| オブジェクト | 説明 | 例 |
-| --- | --- | --- |
-| シークレット | 汎用的な文字列を格納する | パスワード、データベースの接続文字列、APIキー |
-| キー | 暗号化キーを格納する | RSAキー、ECキー |
-| 証明書 | X.509証明書を格納する | CAによって発行された証明書、自己署名証明書 |
+#### Compliance management solutions
 
-### データストレージソリューションを設計する（20~25%）
+Compliance management is the ongoing process of ensuring adherence to laws and organizational or industry guidelines.
 
-#### データソリューションの基礎
+1. Azure Policy: Governs Azure resources so that they comply with business rules.
+2. Implementation steps:
+   1. Policy definition:
 
-1. 構造化データと非構造化データ
-    
-    
-    | データ | 説明 | 例 |
-    | --- | --- | --- |
-    | 構造化データ | 事前定義のルール（スキーマ）による、形式が定まったデータ | リレーショナルデータベース |
-    | 非構造かデータ | スキーマのない、形式が定まっていない | メール、ソーシャルメディアの動画、画像 |
-    | 半構造化データ | 非構造化データに含まれるが、ある程度の形式が定まったデータ | XMLデータ、JSONデータ |
-2. ストレージ：非構造かデータを長期間保管するのに適した場所です
-    
-    
-    |  | Block Storage | File Storage | Object Storage |
-    | --- | --- | --- | --- |
-    | 説明 | データをブロック単位で保存 | データをファイル単位で保存 | データをオブジェクト単位で保存 |
-    | プロトコル | FC, iSCSI | CIFS, NFS | HTTP/ HTTPS |
-    | 例 | HarddiskやSSDなどのDisk | WindowsやNFSファイルサーバー | Azure Storage |
-3. Relational Database = SQL database
-    1. データを複数のテーブルで管理し、デーブル間の関係を定義したものです。
-    2. RDBを管理するシステムはRDBMS (RDB Management System) 例：MySQL, PostgreSQL, MariaDB 
-4. Non-Relational Database = NoSQL Database
-    1. データ整合性などの一部の機能を緩和することで、大容量かつ低レイテンシーのデータベース
-    
-    | データモデル | 説明 | データベース例 |
-    | --- | --- | --- |
-    | Key Value 型 | データをキーと値のペアで格納する | Redis |
-    | Widecolumn 型 | データをキーと値のペアで格納するが、値が複数のカラムになる | Cassandra |
-    | Document 型 | データをJSONやXMLなどのドキュメント形式で格納する | MongoDB |
-    | グラフ型 | データの実体（ノード）とデータの関係性（エッジ）を格納する | Neo4j |
-    
-    |  | Relational Database | Non-Relational Database |
-    | --- | --- | --- |
-    | データの種類 | 構造化データ | 非構造化データ |
-    | スキーマ | 必要 | 不要 |
-    | アクセス方法 | SQLクエリー | API |
-5. Data Warehouse：分析用の構造化データを格納する
-    
-    ERP ─┐
-    SQL ─┼→ Data Warehouse → BI / Analysis
-    CRM ─┘
-    
-6. Data Lake：生データを元の形式で格納する
-    
-    
-    |  | Data WareHouse | Data Lake |
-    | --- | --- | --- |
-    | データの種類 | 構造化データ | 構造化データ、非構造化データ |
-    | スキーマ | 必要 | 不要 |
-    | データソース例 | OLTP Data, ERP Data | IoT data, Social Media Data |
-7. Delta Lake: Apache Sparkベースのストレージレイヤーとして主にDatabricks社によって開発されました
+      | Effect | Description |
+      | --- | --- |
+      | append | Allows a resource property to be appended/changed. |
+      | deny | Blocks a change to a resource property. |
+      | audit | Records an event in the Activity Log without changing the resource. |
+      | auditIfNotExists | Records an event in the Activity Log if a related resource does not exist. |
+      | deployIfNotExists | Creates a resource if a related resource does not exist. |
+      | disabled | Disables the policy (for testing). |
+      | modify | Changes resource tags. ⭐ Can change or add attributes such as tags. |
+   2. Initiative definition.
+   3. Assign a policy or initiative definition to a scope:
+      - When there are many policy definitions, assigning each individually is cumbersome. An initiative definition groups multiple policies so they can be assigned together in one operation.
+   4. Evaluation:
+      - Azure Policy performs real-time evaluation when resources change and periodic background scans. Azure CLI or Azure PowerShell can also run an on-demand evaluation scan.
+
+#### Secret management solution
+
+1. Azure Key Vault:
+
+   | Object | Description | Examples |
+   | --- | --- | --- |
+   | Secret | Stores general strings. | Passwords, database connection strings, API keys. |
+   | Key | Stores encryption keys. | RSA keys, EC keys. |
+   | Certificate | Stores X.509 certificates. | CA-issued certificates, self-signed certificates. |
+
+### Design data storage solutions (20–25%)
+
+#### Data solution fundamentals
+
+1. Structured and unstructured data
+
+   | Data type | Description | Examples |
+   | --- | --- | --- |
+   | Structured data | Data in a fixed format, governed by predefined rules (a schema). | Relational databases. |
+   | Unstructured data | Data without a schema or fixed format. | Email, social media videos, images. |
+   | Semi-structured data | Data that is unstructured but has some defined format. | XML, JSON. |
+2. Storage is suitable for retaining unstructured data over long periods.
+
+   |  | Block storage | File storage | Object storage |
+   | --- | --- | --- | --- |
+   | Description | Stores data in blocks. | Stores data as files. | Stores data as objects. |
+   | Protocols | FC, iSCSI | CIFS, NFS | HTTP/HTTPS |
+   | Examples | Disks such as hard drives and SSDs. | Windows or NFS file servers. | Azure Storage. |
+3. Relational database = SQL database
+   1. Manages data in multiple tables and defines relationships between the tables.
+   2. A system for managing relational databases is an RDBMS (Relational Database Management System), for example MySQL, PostgreSQL, and MariaDB.
+4. Non-relational database = NoSQL database
+   1. A database designed for high volumes and low latency by relaxing some features, such as data consistency.
+
+   | Data model | Description | Example database |
+   | --- | --- | --- |
+   | Key-value | Stores data as key-value pairs. | Redis |
+   | Wide-column | Stores data as key-value pairs, with values spanning multiple columns. | Cassandra |
+   | Document | Stores data in document formats such as JSON or XML. | MongoDB |
+   | Graph | Stores entities (nodes) and relationships (edges). | Neo4j |
+
+   |  | Relational database | Non-relational database |
+   | --- | --- | --- |
+   | Data type | Structured | Unstructured |
+   | Schema | Required | Not required |
+   | Access method | SQL queries | API |
+5. Data warehouse: Stores structured data for analysis.
+
+   ```text
+   ERP ─┐
+   SQL ─┼→ Data Warehouse → BI / Analysis
+   CRM ─┘
+   ```
+6. Data lake: Stores raw data in its original format.
+
+   |  | Data warehouse | Data lake |
+   | --- | --- | --- |
+   | Data types | Structured | Structured and unstructured |
+   | Schema | Required | Not required |
+   | Example sources | OLTP data, ERP data | IoT data, social media data |
+7. Delta Lake: A storage layer based on Apache Spark, developed primarily by Databricks.
 
 #### **Azure Storage**
 
-1. **Azure Blob （Binary Large Object) Storage (containers)**: A massively scalable object store for text and binary data.
-    - Storage Tiers:
-    1. Hot: Higher storage costs & Lower access costs
-    2. Cool: Minimun storage duration 30 days. Cold: Lower storage costs & Higher access costs & Intended for data that will remain cool for 90 days or more
-        - **クールアクセス層を使用する：Standard 汎用 v2　Blob Storage**
-    3.  Archive: Lowest storage costs & Highest retrieval costs & when a blob is in archive storage it is offline and cannot be read
-        - ✅ 対応アカウント：**StorageV2、Blob Storage**。StorageV1 は**非対応**。
-        - ✅ 対応する冗長化：**LRS/GRS/RA-GRS**。ZRS/GZRS/RA-GZRS は**非対応**。
-        - ⚠️ **Premium BlockBlob** アカウントは層の変更に**非対応**（削除のみ）。
-        - ⚠️ Archive 層ではスナップショットを作成できない。
-    - Immutable Storage：ユーザーはビジネスに不可欠なデータを WORM (Write Once, Read Many) 状態で保存できます。 WORM の状態では、ユーザーが指定した期間、データを変更、削除することができないため、上書きや削除からデータを保護することができます
-2. **Azure Files**: Managed file shares for cloud or on-premises deployments. Access files across multiple machines. Access to shared folders via SMB (Server Message Block protocol 445), not only via API, but also directly from Windows 10, macOS, and Linux.
-    - **Authentication method for File service: SAS and Microsoft Entra**
-    - **永続ストレージ**を必要とする場合、ストレージアカウントのファイル共有をマウントしてコンテナーの外部にデータを保存するように構成することができます
-    - **Azure Storage Explorer is a graphical tool to manage Azure Storage Resources (Blobs, files, queues, tables). But cannot create new storage accounts**
-    - Azureコンテナーインスタンスの**外部ボリュームとしてサポート**されているのは、Azure Filesで作成された Azureファイル共有のみです
-    
-    | Premium | File shares use SSD and provide consistent high performance and low latency. Can be used with both Server Message Block(SMB) and Network file system(NFS) protocols |
-    | --- | --- |
-    | Transaction optimized | トランザクション量の多いワークロード向け。Premium ファイル共有ほどの低遅延が不要な場合に適する。HDD ベースの標準ストレージ ハードウェアで提供される |
-    | Hot access tier | チーム共有など、一般的なファイル共有向けに最適化されたストレージ。標準ストレージ ハードウェア上の HDD で提供される |
-    | cool access tier | オンライン アーカイブ向けに最適化された低コストのストレージ。HDD ベースのストレージ ハードウェアで提供される |
-    - **Azure File Sync**: Windows Server 上の Azure ファイル共有（Azure Storage 内のファイル）に保存されたデータをキャッシュして利用するサービスです。オンプレミスに展開する場合、展開先リージョン内に Azure ファイル共有が必要です。
-        - オンプレミスのファイル サーバーをクラウドに拡張する
-        - クラウドで一元管理し、複数拠点間で共有する
-        - バックアップと災害対策
-3.  **Four Replication Strategies:** 
-    
-    ![Untitled](../images/az305-05.png)
-    
-    ![image.png](../images/az305-06.png)
-    
-    - **SMB Multichannel only for Premium Azure File**
-    - **Standard 汎用 v2 は「ゾーン冗長ストレージ (ZRS)」をサポートしており、Azureポータルから LRS → ZRS に変換することができます**
-    - GRS/GZRS など、リージョン間冗長化を有効にしたストレージ アカウントでのみ、このフェールオーバーが関係します。
+1. **Azure Blob (Binary Large Object) Storage (containers)**: A massively scalable object store for text and binary data.
+   - Storage tiers:
+     1. Hot: Higher storage costs and lower access costs.
+     2. Cool: Minimum storage duration of 30 days. Cold: Lower storage costs and higher access costs; intended for data that will remain cool for 90 days or more.
+        - **To use the Cool access tier: Standard general-purpose v2 Blob Storage.**
+     3. Archive: Lowest storage costs and highest retrieval costs. A blob in Archive is offline and cannot be read.
+        - ✅ Supported accounts: **StorageV2 and Blob Storage**. StorageV1 is **not supported**.
+        - ✅ Supported redundancy: **LRS/GRS/RA-GRS**. ZRS/GZRS/RA-GZRS are **not supported**.
+        - ⚠️ **Premium BlockBlob** accounts do **not** support tier changes (deletion only).
+        - ⚠️ Snapshots cannot be created in the Archive tier.
+   - Immutable Storage: Lets users store business-critical data in a WORM (Write Once, Read Many) state. Data cannot be changed or deleted during the period specified by the user, protecting it from overwrites and deletion.
+2. **Azure Files**: Managed file shares for cloud or on-premises deployments. Files can be accessed across multiple machines. Shared folders can be accessed via SMB (Server Message Block, port 445), not only through an API but also directly from Windows 10, macOS, and Linux.
+   - **Authentication methods for the File service: SAS and Microsoft Entra.**
+   - If **persistent storage** is required, mount a file share from a storage account and configure the container to store data outside the container.
+   - **Azure Storage Explorer is a graphical tool for managing Azure Storage resources (Blobs, Files, Queues, Tables), but it cannot create new storage accounts.**
+   - The only external volume supported by Azure Container Instances is an Azure file share created with Azure Files.
+
+   | Tier | Description |
+   | --- | --- |
+   | Premium | File shares use SSDs and provide consistently high performance and low latency. Supports both Server Message Block (SMB) and Network File System (NFS) protocols. |
+   | Transaction optimized | For transaction-heavy workloads where Premium file-share latency is not required. Provided on standard HDD-based storage hardware. |
+   | Hot access tier | Optimized for general-purpose file shares, such as team shares. Provided on HDDs in standard storage hardware. |
+   | Cool access tier | Low-cost storage optimized for online archives. Provided on HDD-based storage hardware. |
+   - **Azure File Sync**: Caches data stored in Azure file shares (files in Azure Storage) on Windows Server for use. For an on-premises deployment, an Azure file share is required in the deployment region.
+     - Extends an on-premises file server to the cloud.
+     - Centralizes management in the cloud and shares data across multiple sites.
+     - Supports backup and disaster recovery.
+3. **Four replication strategies:**
+
+![Untitled](../images/az305-05.png)
+
+![image.png](../images/az305-06.png)
+
+   - **SMB Multichannel is available only for Premium Azure Files.**
+   - **Standard general-purpose v2 supports Zone-Redundant Storage (ZRS), and you can convert from LRS to ZRS in the Azure portal.**
+   - Failover is relevant only for storage accounts with cross-region redundancy enabled, such as GRS/GZRS.
 
 #### Azure SQL Database
 
-1. Azure SQL Database: 単一データベース。新規のクラウド アプリケーションに適しています。
-    - Two primary pricing options for SQL Database:
-        - **DTU( Database Transaction Unit) is a combined measure of compute, storage, and I/O resources.**
-        - **vCore is a virtual core. You choose the number of virtual cores and have greater control over your compute costs**
-2. A single Azure SQL Database は serverless と elastic pool に対応する
-    - **Serverless モード：
-    ワークロードに応じて CPU を自動でスケールアップ／ダウン ✅
-    クエリがないときは自動一時停止 ✅
-    実際の使用秒数に応じて課金 ✅ ←「秒単位課金」の要件を満たす**
-    - General Purpose と Hyperscale に対応する
-3. Azure SQL Managed Instance: Azure SQL の PaaS デプロイ オプションです。Azure SQL Database と同様に完全管理型で、SQL Server インスタンスを提供しながら、仮想マシンの管理負荷を大幅に減らします。オンプレミス SQL Server の移行に適しています。
-4. SQL server on Azure virtual machine: Azure 仮想マシン（VM）上で動作する SQL Server です。オンプレミスのマシンを管理せずに、クラウドで SQL Server のフル バージョンを使用できます。
-    1. オンプレミスのMicrosoft SQL Serverを最小限の工数でAzureへ移行できるという特徴がある
+1. Azure SQL Database: A single database, suitable for new cloud applications.
+   - Two primary pricing options for SQL Database:
+     - **DTU (Database Transaction Unit) is a combined measure of compute, storage, and I/O resources.**
+     - **A vCore is a virtual core. You choose the number of virtual cores and have greater control over compute costs.**
+2. A single Azure SQL Database supports serverless and elastic pool options.
+   - **Serverless mode:**
+     - Automatically scales CPU up or down based on workload. ✅
+     - Automatically pauses when there are no queries. ✅
+     - Charges based on actual usage time in seconds. ✅ Meets a “per-second billing” requirement.
+   - Supported in General Purpose and Hyperscale tiers.
+3. Azure SQL Managed Instance: A PaaS deployment option for Azure SQL. Like Azure SQL Database, it is fully managed, and it provides a SQL Server instance while greatly reducing VM management overhead. Suitable for migrating on-premises SQL Server.
+4. SQL Server on Azure Virtual Machines: SQL Server running on an Azure virtual machine (VM). Use the full version of SQL Server in the cloud without managing an on-premises machine.
+   1. One feature is that on-premises Microsoft SQL Server can be migrated to Azure with minimal effort.
 
-| Compare | SQL Database | SQL Managed Instance  | SQL Server on Azure Virtual Machines |
+| Comparison | SQL Database | SQL Managed Instance | SQL Server on Azure Virtual Machines |
 | --- | --- | --- | --- |
-| Scenarios | 最新のクラウド アプリ、大規模構成、またはサーバーレス構成に最適 | クラウドへ移行する大半のインスタンス レベル機能に最適 | 迅速な移行や OS レベルのアクセスが必要なアプリに最適 |
-| Features | Serverless compute
-Fully managed service
-Elastic pool
-**OLTP に最適化** | Native virtual networks
-Fully managed service
-Instance pool
-**CLR（Common Language Runtime）に対応** | OS-Level server access
-Expansive version support for SQL server |
-- Azure SQL Database の Business Critical 層は、高性能 OLTP ワークロード向けに最適化されています。障害時に最速の復旧が必要な場合に適し、インメモリ技術や高速データベース復旧などにより、ダウンタイムを最小限に抑えて迅速に復旧します。
-- Azure SQL Database Hyperscale は、複数の読み取り専用レプリカ（Read scale-out）に適している
-    - 複数の読み取り専用レプリカ
-    - データを自動的に同期／複製する
-    - Read scale-out
-    - 高速フェールオーバー
-    - Be optimized for online transaction processing (OLTP)
+| Scenarios | Best for modern cloud apps, large-scale configurations, or serverless configurations. | Best for most instance-level features needed when migrating to the cloud. | Best for apps that need a fast migration or OS-level access. |
+| Features | Serverless compute; fully managed service; elastic pool; **optimized for OLTP**. | Native virtual networks; fully managed service; instance pool; **supports CLR (Common Language Runtime)**. | OS-level server access; broad SQL Server version support. |
+
+- The Business Critical tier of Azure SQL Database is optimized for high-performance OLTP workloads. It is suitable when the fastest recovery is needed after a failure. In-memory technology and fast database recovery help minimize downtime.
+- Azure SQL Database Hyperscale is suitable for multiple read-only replicas (read scale-out):
+  - Multiple read-only replicas.
+  - Automatic data synchronization/replication.
+  - Read scale-out.
+  - Fast failover.
+  - Optimized for online transaction processing (OLTP).
 
 ![image.png](../images/az305-07.png)
 
 ![image.png](../images/az305-08.png)
 
-1. Azure SQL Databaseのセキュリティ
-    1. Azure SQL Database監査ログ：Azureポータルから監査ログを有効化し、ストレージアカウントを選択または新規作成する場合、ストレージアカウントはデータベースやサーバーと同じリージョンに限定されたので注意が必要です
-    2. Firewall：SQL Database への接続を許可する IP アドレスを指定する
-    3. アクセス制御
-    4. Row-level Security（RLS）：ユーザーが閲覧できる行（Row）を制御する
-    5. Dynamic Data Masking：電話番号や住所などの個人情報PII (Personally Identifiable Information) の例に対して動的データマスキングを設定することで、プライバシーを保護できる
-    6. 転送中の暗号化：クライアントとAzure SQL Databaseの通信を、SSL/TLSを使用して暗号化することができます
-    7. Transparent Data Entryption：Azure SQL Dataのデータベース全体を暗号化する機能。規定、ユーザ独自のキーもある。ユーザーが独自のキーを用意する場合、アルゴリズムとして非対称、RSA、RSA HSMを指定でき、キーサイズは2048, 3072をサポートします 
-    8. Always Encrypted：クライアント側で機密データを暗号化した上で、Azure SQL Databaseのデータベースへ書き込む機能
+1. Azure SQL Database security
+   1. Azure SQL Database audit logs: When enabling audit logs in the Azure portal and selecting or creating a storage account, note that the storage account is limited to the same region as the database or server.
+   2. Firewall: Specify the IP addresses allowed to connect to SQL Database.
+   3. Access control.
+   4. Row-Level Security (RLS): Controls which rows a user can view.
+   5. Dynamic Data Masking: Protects privacy by masking Personally Identifiable Information (PII), such as phone numbers and addresses.
+   6. Encryption in transit: Encrypts communication between clients and Azure SQL Database using SSL/TLS.
+   7. Transparent Data Encryption: Encrypts the entire Azure SQL Database. There are default and customer-managed keys. If using your own key, supported options include asymmetric RSA and RSA HSM; key sizes of 2048 and 3072 are supported.
+   8. Always Encrypted: Encrypts sensitive data on the client before writing it to an Azure SQL Database.
 
-#### AzureのNon-Relational Database
+#### Azure non-relational databases
 
-1. Azure Cosmos DB：グローバル分散型 NoSQL データベース
-    1. NoSQLデータベースの多くのAPIオブションをサポートする NoSQL, MongoDB, Apache Cassandra, Apache Gremlin, Table
-        
-        ✑ Support SQL commands.
-        
-        ✑ Support multi-master writes.
-        
-        ✑ Guarantee low latency read operations.
-        
-    2. 設計パラメーター：
-        1. Request Unit: Cosmos DB におけるデータベース操作性能の測定単位
-        2. 容量モード：
-            - Provisioning **throughput** mode: Request Unit（RU）を自分で設定する
-            - Auto-scaling mode: RU が負荷に応じて自動的に変化する
-            - Serverless mode: RU の設定不要（従量課金）
-        3. アクセス制御：
-            - RBAC: Entra IDのユーザやグループを使用したAzure RBACによるアクセス制御
-            - プライマリキー／セカンダリキー
-            - リソーストークン：特定のデータベース、コンテナー、項目への一時的なアクセスを提供する
-    3. Azure Cosmos DBはNoSQLとSQLの２種類のデータベースをサポートする
-    NoSQLには
-        1. SQL API は JSON ドキュメントの処理に最適です。JSON データをネイティブ形式で保存し、SQL 構文でクエリできるため、JSON ドキュメントを効率よく柔軟に扱えます。
-        2. Gremlin API はグラフ データ向けに設計され、グラフの走査とクエリに最適化されています。
-        3. Cassandra API は列ファミリー データ モデル向けに設計され、固定スキーマを持つ構造化データの処理に適しています。
-        4. MongoDB API は JSON ドキュメントの効率的な保存とクエリに適しています。
-2. Azure Cosmos DB 　SQLについては、Azure Cosmos DB for PostgreSQL
-    
-    Azure Cosmos DB のサービス基盤を利用すると、PostgreSQL データベースを複数リージョンに分散できます。水平スケーリングにより高いパフォーマンスを実現し、マルチリージョン レプリケーションにより高可用性を提供します。
-    
-    ![image.png](../images/az305-09.png)
-    
+1. Azure Cosmos DB: A globally distributed NoSQL database.
+   1. Supports many NoSQL database APIs: NoSQL, MongoDB, Apache Cassandra, Apache Gremlin, and Table.
+      - Supports SQL commands.
+      - Supports multi-master writes.
+      - Guarantees low-latency read operations.
+   2. Design parameters:
+      1. Request Unit (RU): A unit for measuring database operation throughput in Cosmos DB.
+      2. Capacity modes:
+         - Provisioned throughput mode: Set the Request Units (RUs) yourself.
+         - Autoscale mode: RUs change automatically according to load.
+         - Serverless mode: No RU configuration is needed (pay as you go).
+      3. Access control:
+         - RBAC: Access control using Azure RBAC with Entra ID users and groups.
+         - Primary/secondary keys.
+         - Resource tokens: Provide temporary access to a specific database, container, or item.
+   3. Azure Cosmos DB supports two kinds of databases: NoSQL and SQL. For NoSQL:
+      1. SQL API is ideal for processing JSON documents. It stores JSON data natively and lets you query it using SQL syntax, providing efficient and flexible handling of JSON documents.
+      2. Gremlin API is designed for graph data and optimized for graph traversals and queries.
+      3. Cassandra API is designed for the column-family data model and is suitable for structured data with a fixed schema.
+      4. MongoDB API is suitable for efficiently storing and querying JSON documents.
+2. For SQL with Azure Cosmos DB: Azure Cosmos DB for PostgreSQL.
 
-#### データ分析Solutionの基礎
+   Using the Azure Cosmos DB service foundation, PostgreSQL databases can be distributed across multiple regions. Horizontal scaling provides high performance, and multiregion replication provides high availability.
 
-1. Apache Hadoop は主に 2 つの重要な部分で構成されます：Hadoop = 分散ストレージ + 分散コンピューティング
-    - **HDFS** (Hadoop Distributed File System) → データを保存
-    - **MapReduce** → 分散データ処理
-2. Apache Spark：Apache Hadoop を改良したものです。すべてのデータをメモリ上で高速処理できるため、**リアルタイム分析が可能**です。Spark は**データ処理／分析エンジン**であり、データベースではありません。
-    
-    ![image.png](../images/az305-10.png)
-    
-3. Databricks：Apache Spark ベースのデータ分析プラットフォーム
+![image.png](../images/az305-09.png)
 
-#### **Azureのデータ分析ソリューション**
+#### Data analytics solution fundamentals
 
-1. データ分析の流れ：**ADF でデータ移動 → ADLS に保存 → Databricks/Spark で加工 → Synapse で分析 → Power BI で表示**
-    
-    
-    | データ分析のステップ | 説明 | 主なAzureサービス |
-    | --- | --- | --- |
-    | Ingest | さまざまなデータ ソースからデータを収集する | Azure Data Factory ⭐ 収集／移動／変換
-    Azure Synapse Analytics ⭐ 分析用データ ウェアハウス |
-    Azure Synapse Analytics ⭐ 分析型数据仓库 |
-    Azure Synapse Analytics ⭐ 分析用データ ウェアハウス |
-    | Prep & Train | データ分析や機械学習のためのデータ加工・前処理を行う | Azure Databricks ⭐ Spark によるデータ処理／機械学習 |
-    Azure Synapse Analytics (Spark Pool) |
-    | Model & Serv | 整理されたデータを分析用ストアに保存する | Azure Synapse Analytics (SQL pool)
-    Azure Analysis Services ⭐ 多次元分析
-    Azure Data Explorer ⭐ 大量データのほぼリアルタイム分析
-    Azure Data Share ⭐ 他組織とのデータ共有
-    Azure Machine Learning
-    Power BI |
-2. **Azure Data Factory：クラウドベースのデータ統合サービスです。データ駆動型ワークフローを作成・スケジュールでき、データの移動を調整し、大規模なデータ変換を実行します。パイプラインはさまざまなデータ ストアからデータを取り込みます。**
-    - Azure Data Factory は収集したデータを変換・加工して別の場所に保存します。**Extract（抽出）、Transform（変換）、Load（書き出し）＝ ETL データ統合**。SSIS = SQL Server Integration Services。
-    - **Azure Data Factory でデータを変換して Azure Data Lake Storage にエクスポートするには、データ移動エンジンである Integration Runtime が必要です。Azure Data Factory（ADF）は SSIS パッケージをホストして実行できます。これは Azure-SSIS Integration Runtime です。**
-    
-    ![image.png](../images/az305-11.png)
-    
-3. **Azure Data Lake：データを通常 Blob またはファイルとして自然な形式で保存します。Azure Data Lake Storage はファイル システムとストレージ プラットフォームを組み合わせ、データから迅速に洞察を得られるようにします。Azure Blob Storage を基盤とし、分析ワークロード向けに最適化されています。**
-    
-    ![image.png](../images/az305-12.png)
-    
-    - Azure Data Lake Storage characteristics:
-        - Hierarchical Namespace
-        - Scalability
-        - Security: Azure AD for identity and access management, RBAC and so on. Also supports Azure Private Link
-        - **イミュータブル ストレージに対応**
-        - **匿名アクセスを無効化する**
-        - **Supports access control list (ACL)-based Azure AD permissions**
-    - Azure Data lake storage three important steps:
-        - Ingest data:
-            - For unplanned data, you can use tools like AzCopy, the Azure CLI, PowerShell, and Azure Storage Explorer.
-            - For relational data, the Azure Data Factory service can be used. You can transfer data from any source, such as Azure Cosmos DB, SQL Database, Azure SQL Managed instances, and more
-            - For streaming data, you can use tools like Apache Storm on Azure HDInsight, Azure Stream Analytics, and so on
-        - Access stored data: データへの最も簡単なアクセス方法は Azure Storage Explorer です。GUI を備えた独立アプリケーションで、Azure Data Lake のデータにアクセスできます。PowerShell、Azure CLI、**HDFS** CLI、各種言語 SDK も利用できます。
-        - Configure access control: 認可を設定し、Azure Data Lake Storage 内のデータにアクセスできるユーザーを制御します。Azure RBAC または ACL を選択できます。
-        - Azure Blob storage or Azure Data Lake comparison
-4. **Azure Databricks SKU：完全管理型のクラウド ビッグデータ／機械学習プラットフォームで、開発者による AI とイノベーションを加速します。**
-    - Azure Databricks has a Control plane and Data plane:
-        - **Azure Databricksの価格レベルには、Standard とPremium がありますが、「Azure Data Lake Storage 資格情報 Credential Passthrough」を使用するには Premium プランが必要です**
-    - Service Principal: アプリケーションから Azure Databricks ワークスペースへアクセスする認証には、サービス プリンシパルを構成します。これは Azure リソースへアクセスするアプリやサービスのセキュリティ ID です。アプリ内に資格情報を保存せず安全に認証できるため、管理負荷を抑えセキュリティを高めます。
-        - Use for Big Data analytics, Machine Learning, Real-time Analytics, ETL processes, Data Exploration and Visualization
-        
-        ![image.png](../images/az305-13.png)
-        
-5. Azure Synapse Analytics：ビッグデータ分析、エンタープライズ データ ウェアハウス、データ統合を組み合わせたサービスです。サーバーレス データや大規模データに対してクエリを実行できます。データの取り込み、探索、変換、管理に加え、BI と機械学習の分析を支援します。
-    
-    ![image.png](../images/az305-14.png)
-    
-    - Components of Azure Synapse Analytics:
-        - Azure Synapse SQL pool: サーバーレスと専用リソースのモデルを提供し、ノードベースのアーキテクチャに対応します。予測可能な性能とコストが必要なら専用 SQL プール、不定期・予測不能なワークロードには常時利用可能なサーバーレス SQL エンドポイントを使用できます。
-        - Azure Synapse Spark pool: Apache Spark でデータを処理するサーバー クラスターです。Python、Scala、SQL、C#（Apache Spark の .NET 言語）のいずれかで処理ロジックを記述できます。Synapse 版 Apache Spark は、データ準備、データ エンジニアリング、ETL、機械学習向けのオープンソース エンジンを統合しています。
-        
-        ![image.png](../images/az305-15.png)
-        
-        - Azure Synapse Pipelines:
-            - SQL Server などのデータ ソースからデータを読み取る
-            - Azure Data Lake Storage Gen2 にデータをコピーする
-            - データ移動中に Mapping Data Flow などで変換する
-            - 変換後のデータをターゲットの Data Lake に書き込む
-        - Azure Synapse Link: **Azure Cosmos DB に接続するコンポーネントです。Cosmos DB に保存された運用データをほぼリアルタイムで分析できます。**
-            
-            ![image.png](../images/az305-16.png)
-            
-        - Azure Synapse Studio: Web ベースの統合開発環境（IDE）です。Azure Synapse Analytics の機能を一元的に利用できます。SQL／Spark プールの作成、パイプラインの定義と実行、外部データ ソースへのリンク設定ができます。
-    - Managed Workspace仮想ネットワーク：ユーザーの代わりにAzure Synapse Analyticsによって管理されるため、セキュリティやパフォーマンスなどの管理が不要となり、管理負荷が軽減します。
-6. Azure Analysis Services：オンライン分析処理OLAP（Online Analytical Processing）を実行します
-7. Azure Machine Learning: MLのモデルの構築とデプロイを行うManaged Service
-8. **Azure Data Explorer：大量データをほぼリアルタイムで取り込み、分析・可視化するオールインワン サービスです。大量データ + ほぼリアルタイム分析に適しています。**
-9. Azure Data Share：ADLS Gen2やAzure Synapse Analytics、Azure SQL Databaseなどのデータのスナップショットへのアクセスを、provide restricted access
+1. Apache Hadoop consists primarily of two important parts: Hadoop = distributed storage + distributed computing.
+   - **HDFS** (Hadoop Distributed File System) → stores data.
+   - **MapReduce** → distributed data processing.
+2. Apache Spark improves on Apache Hadoop. It can process all data quickly in memory, enabling **real-time analytics**. Spark is a **data processing/analytics engine**, not a database.
 
-### ビジネス継続性ソリューションを設計する（15~20%）
+![image.png](../images/az305-10.png)
+
+3. Databricks: A data analytics platform based on Apache Spark.
+
+#### **Azure data analytics solutions**
+
+1. Data analytics flow: **Move data with ADF → store in ADLS → transform with Databricks/Spark → analyze with Synapse → display with Power BI.**
+
+   | Analytics step | Description | Main Azure services |
+   | --- | --- | --- |
+   | Ingest | Collect data from various sources. | Azure Data Factory ⭐ Ingestion/movement/transformation; Azure Synapse Analytics ⭐ Analytics data warehouse. |
+   | Prep & Train | Prepare and transform data for analytics and machine learning. | Azure Databricks ⭐ Spark data processing/machine learning; Azure Synapse Analytics (Spark pool). |
+   | Model & Serve | Store organized data in an analytics store. | Azure Synapse Analytics (SQL pool); Azure Analysis Services ⭐ Multidimensional analysis; Azure Data Explorer ⭐ Near-real-time analysis of large volumes; Azure Data Share ⭐ Data sharing with other organizations; Azure Machine Learning; Power BI. |
+2. **Azure Data Factory: A cloud-based data integration service. It creates and schedules data-driven workflows, orchestrates data movement, and performs large-scale data transformations. Pipelines ingest data from a variety of data stores.**
+   - Azure Data Factory transforms collected data and stores it elsewhere. **Extract, Transform, Load (ETL) is data integration.** SSIS = SQL Server Integration Services.
+   - **To transform data with Azure Data Factory and export it to Azure Data Lake Storage, the Integration Runtime data movement engine is required. Azure Data Factory (ADF) can host and run SSIS packages using the Azure-SSIS Integration Runtime.**
+
+![image.png](../images/az305-11.png)
+
+3. **Azure Data Lake: Data is usually stored in its natural format as blobs or files. Azure Data Lake Storage combines a file system with a storage platform so you can get insights from data quickly. It is built on Azure Blob Storage and optimized for analytics workloads.**
+
+![image.png](../images/az305-12.png)
+
+   - Azure Data Lake Storage characteristics:
+     - Hierarchical namespace.
+     - Scalability.
+     - Security: Azure AD for identity and access management, RBAC, and more. Also supports Azure Private Link.
+     - **Supports immutable storage.**
+     - **Disable anonymous access.**
+     - **Supports Azure AD permissions based on access control lists (ACLs).**
+   - Three important Azure Data Lake Storage steps:
+     - Ingest data:
+       - For unplanned data, use tools such as AzCopy, Azure CLI, PowerShell, and Azure Storage Explorer.
+       - For relational data, use Azure Data Factory. Data can be transferred from any source, such as Azure Cosmos DB, SQL Database, and Azure SQL Managed Instance.
+       - For streaming data, use tools such as Apache Storm on Azure HDInsight and Azure Stream Analytics.
+     - Access stored data: The easiest way to access data is Azure Storage Explorer, a standalone GUI application for Azure Data Lake data. You can also use PowerShell, Azure CLI, **HDFS** CLI, and language SDKs.
+     - Configure access control: Set authorization to control who can access data in Azure Data Lake Storage. Choose Azure RBAC or ACLs.
+     - Compare Azure Blob Storage and Azure Data Lake.
+4. **Azure Databricks SKU: A fully managed cloud big data and machine learning platform that accelerates AI and innovation for developers.**
+   - Azure Databricks has a control plane and a data plane.
+     - **Azure Databricks offers Standard and Premium pricing tiers. The Premium plan is required to use Azure Data Lake Storage credential passthrough.**
+   - Service principal: Configure a service principal to authenticate an application accessing an Azure Databricks workspace. It is a security identity for an app or service accessing Azure resources. It enables secure authentication without storing credentials in the app, reducing management overhead and improving security.
+     - Use for big data analytics, machine learning, real-time analytics, ETL processes, data exploration, and visualization.
+
+![image.png](../images/az305-13.png)
+
+5. Azure Synapse Analytics: Combines big data analytics, enterprise data warehousing, and data integration. It can query serverless and large-scale data. It supports data ingestion, exploration, transformation, and management, as well as BI and machine learning analytics.
+
+![image.png](../images/az305-14.png)
+
+   - Azure Synapse Analytics components:
+     - Azure Synapse SQL pool: Provides serverless and dedicated-resource models and supports a node-based architecture. Use a dedicated SQL pool when predictable performance and cost are needed; use the always-available serverless SQL endpoint for intermittent or unpredictable workloads.
+     - Azure Synapse Spark pool: A server cluster for processing data with Apache Spark. Processing logic can be written in Python, Scala, SQL, or C# (the .NET language for Apache Spark). Apache Spark in Synapse integrates an open-source engine for data preparation, data engineering, ETL, and machine learning.
+
+![image.png](../images/az305-15.png)
+
+     - Azure Synapse Pipelines:
+       - Read data from sources such as SQL Server.
+       - Copy data to Azure Data Lake Storage Gen2.
+       - Transform data during movement with Mapping Data Flow or similar tools.
+       - Write transformed data to the target Data Lake.
+     - Azure Synapse Link: **A component that connects to Azure Cosmos DB. It enables near-real-time analytics on operational data stored in Cosmos DB.**
+
+![image.png](../images/az305-16.png)
+
+     - Azure Synapse Studio: A web-based integrated development environment (IDE). It provides centralized access to Azure Synapse Analytics features. You can create SQL/Spark pools, define and run pipelines, and configure links to external data sources.
+   - Managed workspace virtual network: Managed by Azure Synapse Analytics on the user's behalf, reducing the need to manage security, performance, and other aspects.
+6. Azure Analysis Services: Performs Online Analytical Processing (OLAP).
+7. Azure Machine Learning: A managed service for building and deploying ML models.
+8. **Azure Data Explorer: An all-in-one service for ingesting, analyzing, and visualizing large volumes of data in near real time. Suitable for large volumes of data and near-real-time analytics.**
+9. Azure Data Share: Provides access to snapshots of data in ADLS Gen2, Azure Synapse Analytics, Azure SQL Database, and other sources, with restricted access for sharing.
+
+### Design business continuity solutions (15–20%)
 
 #### **Azure Site Recovery**
 
-1. Recovery time objective (RTO)：停電や問題の発生後、リソースを復旧するまでに許容される最大時間です。復旧に RTO より長くかかると、金銭的なペナルティや業務停止につながる可能性があります。ソリューション全体（すべてのリソース）にも、SQL Server インスタンスやデータベースなど個別コンポーネントにも設定できます。
-2. Recovery point objective (RPO)：データベースをどの時点まで復旧する必要があるかを示し、許容できる最大データ損失量に対応します。たとえば SQL Server を含む IaaS VM が午前 10 時に障害となり、データベースの RPO が 15 分の場合、復旧で失うデータは最大 15 分です。つまり午前 9 時 45 分以降の状態に復旧できる必要があります。RPO を達成できるかどうかは複数の要因に左右されます。
-3. Recovery Level Objective RLO: 目標復旧レベル。RLOはRTOとセットで使用し、RLOの段階ごとにRTOを定義する
-4. Azure Site Recoveryのレプリケーション方法
-    
-    
-    | 種類 | 説明 | レプリケーション |
-    | --- | --- | --- |
-    | クラッシュ整合性スナップショット | 単純に仮想マシンのディスクデータをレプリケーションする | 5分ごと |
-    | アプリ整合性スナップショット | アプリの動作を意識した上で仮想マシンのディスクデータをレプリケーションする | 1時間〜12時間ごと |
+1. Recovery time objective (RTO): The maximum time allowed to restore resources after an outage or problem. Taking longer than the RTO may result in financial penalties or business disruption. It can be set for the whole solution (all resources) or for individual components such as a SQL Server instance or database.
+2. Recovery point objective (RPO): Indicates how far back a database must be restored and corresponds to the maximum acceptable data loss. For example, if an IaaS VM running SQL Server fails at 10:00 a.m. and the database RPO is 15 minutes, recovery can lose no more than 15 minutes of data; it must restore to a point at or after 9:45 a.m. Whether the RPO can be met depends on several factors.
+3. Recovery Level Objective (RLO): The target recovery level. RLO is used together with RTO, defining an RTO for each RLO level.
+4. Azure Site Recovery replication methods:
 
-### 事業継続性ソリューションの設計
+   | Type | Description | Replication interval |
+   | --- | --- | --- |
+   | Crash-consistent snapshot | Replicates only the virtual machine disk data. | Every 5 minutes. |
+   | App-consistent snapshot | Replicates virtual machine disk data while accounting for application activity. | Every 1–12 hours. |
 
-1. Availability Sets：単一データセンター内の Azure における計画メンテナンスや単一障害点に対して、稼働時間を確保します。
-    - **Availability Set**
-        - The availability set is prepared as a dedicated resource and allocated at the time of virtual machine creation. **Availability sets cannot be assigned or changed after the virtual machine is created.**
-            - Parameters of an availability set:
-                - **Update Domain: maximum number of update domains that can accommodate planned maintenance of the host server is 20**
-                - **Fault Domain: can accommodate server rack failures Maximum value for a fault domain is 3**
-                
-                ![image.png](../images/az305-17.png)
-                
-2. **Availability Zones は、リージョン内のデータセンター全体に障害が発生しても、別のデータセンターでサービスを継続できる仕組みです。**
-    - Available regions are limited. In Asia, only East and Southeast Asia Regions are available
-    - Virtual machines with unmanaged disk type are not supported by Availability Zones, so convert them to managed disks in advance.
-        - Managed disk: The disk is created in a storage account managed by Azure.
-        - Unmanaged disk: Create a disk in a storage account managed by the user
-        
-        ![image.png](../images/az305-18.png)
-        
-3. Virtual Machine Scale Sets：単一のリージョン内に複数の仮想マシンを一括で作成し、管理します。「正常性監視機能」と「自動修復ポリシー」
+### Design business continuity solutions
+
+1. Availability Sets: Keep systems available during planned maintenance or a single point of failure within an Azure datacenter.
+   - **Availability Set**
+     - An availability set is created as a dedicated resource and assigned when the virtual machine is created. **Availability sets cannot be assigned or changed after the VM has been created.**
+     - Availability set parameters:
+       - **Update Domain: Up to 20 update domains can accommodate planned maintenance of the host server.**
+       - **Fault Domain: Accommodates server rack failures. The maximum number of fault domains is 3.**
+
+![image.png](../images/az305-17.png)
+
+2. **Availability Zones allow a service to continue in another datacenter if an entire datacenter in the region fails.**
+   - The number of available regions is limited. In Asia, only East Asia and Southeast Asia are available.
+   - Virtual machines with unmanaged disks are not supported by Availability Zones, so convert them to managed disks in advance.
+     - Managed disk: The disk is created in a storage account managed by Azure.
+     - Unmanaged disk: The disk is created in a storage account managed by the user.
+
+![image.png](../images/az305-18.png)
+
+3. Virtual Machine Scale Sets: Create and manage multiple virtual machines together within a single region. Includes health monitoring and an automatic repair policy.
 4. Azure Backup
-    - バックアップ手順：
-        - Recovery Servicesコンテナーの作成  **(Recovery Services コンテナーの数は仮想マシン、ファイル共有が存在しているリージョン数による）**
-        - バックアップポリシーの設定　**（バックアップポリシーはバックアップするリソース種別ごとに（仮想マシンとファイル共有は別々で）作成する必要があります　Recovery Services コンテナー x ポリシーの種類）**
-        - バックアップエージェントのインストール、登録
-        - バックアップの実行
-    - オンプレミスバックアップのオプジョンの違い
-        
-        
-        | オプジョン | 特徴 | 制限 | ストレージ |
-        | --- | --- | --- | --- |
-        | Azure Backup Endpoint | Windows OSのフォルダとファイルのバックアップ
-        専有サーバーの構築不要 | Linuxのサポートなし
-        フォルダとファイルのバックアップのみ | Recovery Servicesコンテナー |
-        | Azure Backup Server | アプリ一貫性のあるバックアップのサポート
-        Windows Linuxのサポート | 専有サーバーの構築が必要 | Recovery Servicesコンテナ
-        ローカルディスク |
-    - **Azure Backup only can backup to a vault in the same region. Blob not supported for backup by Recovery Services Vaults.**
-        - **Storage Accounts can be in the different region**
-        - **Log Analytics workspaces must be in the same region**
-    - **Azure Backup Containerは二つ種類があります：**
-        - **Recovery Services コンテナー：仮想マシンに接続されているすべてのディスク（仮想マシン全体）をバックアップできますが、OS ディスクを除外して、データディスクのみをバックアップすることはできません**
-        - **バックアップコンテナー：仮想マシンのマネージドディスクをバックアップするには、最初に「バックアップコンテナー」を作成する必要があります**
-    
-    |  | Azure Backup | Azure Site Recovery |
-    | --- | --- | --- |
-    | 基本機能 | バックアップと復元 | レプリケーションとフェールオーバー |
-    | 最大復旧ポイント | 99年 | 15日 |
-    | 最短RTO | 仮想マシンの規模による（24時間以上の場合もある） | 2時間以内 |
-    | 最短RPO | 24H Standard 
-    4H  Enhanced | 5Min (クラッシュ整合性）
-    1時間（アプリ整合性） |
+   - Backup steps:
+     - Create a Recovery Services vault. **The number of Recovery Services vaults depends on the number of regions containing virtual machines and file shares.**
+     - Configure a backup policy. **A separate backup policy must be created for each resource type being backed up (for example, VMs and file shares require separate policies): Recovery Services vault × policy type.**
+     - Install and register the backup agent.
+     - Run the backup.
+   - Differences between on-premises backup options:
 
-#### ストレージの事業継続性ソリューション
+     | Option | Features | Limitations | Storage |
+     | --- | --- | --- | --- |
+     | Azure Backup Agent | Backs up Windows OS folders and files; no dedicated server required. | No Linux support; backs up folders and files only. | Recovery Services vault. |
+     | Azure Backup Server | Supports application-consistent backups; supports Windows and Linux. | Requires a dedicated server. | Recovery Services vault and local disk. |
+   - **Azure Backup can back up only to a vault in the same region. Recovery Services vaults do not support backing up blobs.**
+     - **Storage accounts can be in a different region.**
+     - **Log Analytics workspaces must be in the same region.**
+   - **There are two types of Azure Backup vaults:**
+     - **Recovery Services vault: Can back up all disks attached to a virtual machine (the entire VM), but cannot exclude the OS disk and back up only the data disks.**
+     - **Backup vault: To back up managed disks for a virtual machine, first create a “Backup vault.”**
+
+   |  | Azure Backup | Azure Site Recovery |
+   | --- | --- | --- |
+   | Core function | Backup and restore | Replication and failover |
+   | Maximum recovery point retention | 99 years | 15 days |
+   | Minimum RTO | Depends on VM size (can be 24 hours or more) | Within 2 hours |
+   | Minimum RPO | 24 hours (Standard); 4 hours (Enhanced) | 5 minutes (crash-consistent); 1 hour (app-consistent) |
+
+#### Storage business continuity solutions
 
 ![Untitled](../images/az305-19.png)
 
 ![image.png](../images/az305-20.png)
 
-#### **アプリケーションの事業継続性ソリューション**
+#### **Application business continuity solutions**
 
 ![image.png](../images/az305-21.png)
 
-- **要件：リージョン障害時も Azure Web App のサービスを継続するにはどうするか**
-    - **⭐ リージョン全体の障害に備えるには、グローバル サービスが必要 → Azure Front Door、Traffic Manager**
-- **Azure Front DoorとAzure CDNは、主に静的コンテンツ（javascript、css、画像ファイルなど）をキャッシュするためのサービスで、バックエンドのデータベースのデータをキャッシュする用途**
+- **Requirement: How can Azure Web App services continue during a regional outage?**
+  - **⭐ To prepare for an outage affecting an entire region, use a global service → Azure Front Door or Traffic Manager.**
+- **Azure Front Door and Azure CDN are mainly used to cache static content (such as JavaScript, CSS, and image files), not data in a backend database.**
 
 ![image.png](../images/az305-22.png)
 
-Azure load balancerとAzure Application Gatewayは、リージョン内の負荷分散ができる
+Azure Load Balancer and Azure Application Gateway can load-balance traffic within a region.
 
-Azure Traffic ManagerとAzure Front doorは、リージョン間の負荷分散ができる
+Azure Traffic Manager and Azure Front Door can load-balance traffic across regions.
 
-Azure application GatewayとAzure Front DoorはSSL処理をオフロードすることができる
+Azure Application Gateway and Azure Front Door can offload SSL processing.
 
-#### Azure Key Vaultの事業継続性ソリューション
+#### Azure Key Vault business continuity solution
 
-1. キーコンテナーのレプリケーション：
-    - 障害が発生した場合は、自動的にペアリージョンにフェールオーバーが行われるため、操作不要
-    - フェールオーバー中は、キーコンテナーが読み取り専用となるため OK (Encrypt, Decrypt, Backup) NG (Create, Update, Delete)
-2. オブジェクトのバックアップ：
-    - ⭐ **バックアップからの復元先は、元の Key Vault と同じリージョンの Key Vault に限られます。**
+1. Key Vault replication:
+   - If a failure occurs, failover to the paired region happens automatically; no action is required.
+   - During failover, the vault becomes read-only. Allowed: Encrypt, Decrypt, Backup. Not allowed: Create, Update, Delete.
+2. Backing up objects:
+   - ⭐ **A backup can be restored only to a Key Vault in the same region as the original Key Vault.**
 
-### インフラストラクチャーソリューションを設計（30~35%）
+### Design infrastructure solutions (30–35%)
 
-#### Computing Solutionの設計
+#### Design computing solutions
 
-1. 仮想マシンサービス：
-    
-    ![image.png](../images/az305-23.png)
-    
-- 仮想マシンのバースト：
-    - B シリーズには **Burst（バースト性能）** があります。低負荷時は低い CPU 性能で動作し、高負荷時には CPU 性能を動的に高めます。
-- 仮想マシンのディスクの種類：
-    
-    
-    | ディスクの種類 | 最大ディスクサイズ | 最大スループット | 最大IOPS | 説明 |
-    | --- | --- | --- | --- | --- |
-    | Standard HDD | 32GB | 500MB/s | 2,000 | HDDベース |
-    | Standard SSD | 32GB  | 750MB/s | 6,000 | SSDベース |
-    | Premium SSD | 32GB | 900MB/s | 20,000 | SSDベース |
-    | Premium SSD V2 | 64GB | 1200MB/s | 80,000 | SSDベース。OSディスクとしては使用できない |
-    | Ultra Disk | 64GB | 10,000MB/s | 400,000 | SSDベース。OSディスクとしては使用できない |
-1. Azure APP Service
-    - App Service Plan: 価格レベルやOSの種類、冗長性などの設定を定義したものです（複数リージョンはサポートしません、**リージョンごとにApp Service Planを作成する必要**）
-        
-        
-        | プラン | 説明 |
-        | --- | --- |
-        | Free | 無料のプラン。SLAがない |
-        | Shared | Freeよりも割り当てられるリソース量は多い。SLAがない |
-        | Basic | 小規模なワークロード向けのプラン |
-        | Standard | 中規模なワークロード向けのプラン |
-        | Premium | 大規模なワークロード向けのプラン |
-        | Isolated | 仮想ネットワークを使用し、完全い分離された専用環境が提供されるプラン |
-    - Deployment Slot: アプリケーションの複数のバージョンを同時にホスティングするAzure App Serviceの機能です（App Service Plan Standard以上）
-        - **Hosts multiple versions of a single web app simultaneously**
-        - **Available for App Service plans with SKUs Standard or higher**
-        - **Would revert to the previous version can replace the slot.**
-    - Service Connector: Azure App Serviceと他のAzureサービスを接続する機能です
-2. Azure Container Service
-    
-    ![photo.heic](../images/az305-24.png)
-    
-    - **Azure Container**
-        
-        ![image.png](../images/az305-25.png)
-        
-3. Serverless Service: アプリを実行するためのサーバをユーザ側で準備せず、クラウド側が提供するサービスを「サーバレスサービス」と呼びます
-    - Azure Functions:  **Serverless + Event-driven**
-        
-        
-        | 料金プラン  | 説明 |
-        | --- | --- |
-        | 従量課金プラン | 実行回数と実行時間に基づくオンデマンドの従量課金のプラン。アプリの実行時間は最大１０分 |
-        | 専用ホスティングプラン | 専用のリソースを用意してアプリを実行する固定料金のプラン。アプリの実行時間は最大１０分 |
-        | Premiumプラン | 従量課金のプランの一種だが、仮想ネットワークへのアクセスのサポートなどの特別な機能が用意されている。また、アプリの実行時間は最大30分に延長されている |
-        
-        ![image.png](../images/az305-26.png)
-        
-4. バッチ処理サービス：
-    - Azure Batch：オンプレミスで動作するクラウド最適化済みの高性能コンピューティング（HPC）ワークロードをクラウドへ移行する場合に最適です。大規模な並列処理や HPC アプリケーションを効率よく実行できます。ジョブ スケジューリング、計算リソースの自動スケーリング、タスク管理を提供します。
-    - ノードの種類
-        
-        
-        | 種類 | 説明 |
-        | --- | --- |
-        | 低優先度VM | Azureの余剰容量を活用した安価な仮想マシン。時間的な制約の少ない開発環境などの短時間実行タスクに向いている |
-        | スポットVM | 低優先度VMと同様の特徴を持つ。なお、低優先度VMは廃止予定のため、スポットVMへの移行が推薦されている |
-        | 専用VM | 専用の仮想マシン。本番環境の長時間実行タスクに向かている |
-        
-        Azure batchでは、プールをユーザ自身で管理することも、Azure Batchに管理させることもできる。これは、プールの作成時に指定する「プール割り当てモード」により決定する
-        
-        | 種類 | 説明 |
-        | --- | --- |
-        | User Subscription | ユーザ自身でプールを管理するモード。仮想マシンのサイズや数はユーザが指定する。専用VMまたはスポットVMが利用可能。オンプレミスのWindows ServerライセンスをAzureで利用できる「Azureハイブリッド特典」を活用できる |
-        | Batch Service | Azure Batchがプールを管理する既定のモード。専用VMまたは低優先度VMが利用可能 |
-    - **Azure CycleCloud：大規模なHPCクラスターのデプロイと管理を行います。Azure Cyclecloudは、業界標準のサードパーティー製のスケジューラを使用できるため、オンプレミスからの容易な移行が可能です**
-        
-        ![image.png](../images/az305-27.png)
-        
+1. Virtual machine services:
 
-#### Application Architectureの設計
+![image.png](../images/az305-23.png)
 
-1. Messaging Architecture
-    - Azure Queue Storage: 送信者と受信者が1対1のサービスです。
-        - クラウド サービス間のトランザクションを**非同期通信**させる
-    - Azure Service Bus: 受信者が複数になる場合、1つのAzure Service Busトピックを使用してパブリッシュ/サブスクライブ（Pub/Sub）方式でメッセージを送受信するように構成します.  **Service Busキューは1対1、Service Busトピックは1対多の形式の通信となります**
-        - クラウド サービス間のトランザクションを**非同期通信**させる
-        - Azure Service Busのキューの「セッションの有効化」オブションを使用すれば、メッセージの先入れ先出しがFIFOが保証され、メッセージを送信した順番で確実に受信することができます
-2. Event Driven Architecture
-    
-    ![image.png](../images/az305-28.png)
-    
-3. Cache Solution
-    
-    キャッシュは、配置する場所によって２種類に分かれています
-    
-    １）コンテンツキャッシュ：クライアントとWebアプリの間に配置し、HTMLベージなどのWebコンテンツをキャッシュする
-    
-    ２）データキャッシュ：Webアプリとデータベースの間に配置し、データベースなどのデータをキャッシュする
-    
-    - Azure Content Delivery Network: Web コンテンツのキャッシュ サービスが Azure Content Delivery Network（Azure CDN）です。世界各地の PoP と呼ばれる配信サーバーで Web コンテンツをキャッシュします。⭐ **Web コンテンツ向け**
-    - Azure Cache for Redis：インメモリ データベースで、すべてのデータをメモリにキャッシュして高速に処理します。⭐ **データベース／アプリケーション データ向け**
-4. 統合ソリューション
-    - Azure API Management：仮想マシンやコンテナー上のアプリ、Azure Functionsの関数アプリなどで提供されているバックエンとサービスへのAPI要求をまとめて管理・保護する
-        - Azure API Managementには、いくつかの価格レベルがあり、価格レベルがPremiumの場合、仮想ネットワークがサポートされます
-        - **Azure API Management:**
-            
-            → API の**レート制限**が必要
-            → 外部／サードパーティの認証に対応する必要がある
-            → バックエンド サービス（Logic Apps／Function Apps など）を変更したくない
-            
-            → OAuth / JWT(JSON Web Token) 検証
-            
-            ![image.png](../images/az305-29.png)
-            
-            ![image.png](../images/az305-30.png)
-            
-    - **Azure Logic Apps：**インターネット上の複数のクラウド サービスを連携し、ワークフローを簡単に作成するサービスです。**ワークフローの自動化**
-        - **概要**：**ローコード／ノーコードのワークフロー オーケストレーション ツール**です。**視覚的な画面でドラッグ＆ドロップ**し、複数のシステム／サービスをつなぎます。
-        - **特徴**：
-            - Office 365、SharePoint、Salesforce、SQL Server、Twitter など、数百種類の**コネクタ（Connector）**を内蔵
-            - **業務プロセスの自動化**に適し、コードを書かずに利用できる（コードの記述も可能）
-            - Functions より機能が豊富で、複雑な複数ステップの業務プロセスに適している
-        - **典型例**：「SharePoint にファイルがアップロードされたらマネージャーにメール通知 → 承認後に SQL データベースへ自動登録」という複数ステップの業務フロー。
-        - **Functions との違い**：
-            - Functions：**コードを記述**し、技術的・論理的な単一タスクに適している
-            - Logic Apps：**ドラッグ＆ドロップで構成**し、業務フローの調整や複数 SaaS システムの統合に適している
-        - **ひとことで覚える**：**「コードを書かずに、ドラッグ＆ドロップで複数のシステムをつなぐ」**。
-5. アプリ構成管理ソリューション
-    - Azure App ConfigurationとAzure Key Vaultはどちらも設定やパラメーターを管理するサービスだが、Azure App configurationはアプリ構成の管理に特化されており、Azure Key Vaultは機密情報の管理に特化されている
+- VM bursting:
+  - B-series VMs support **Burst performance**. They run at lower CPU performance during low demand and dynamically increase CPU performance during high demand.
+- VM disk types:
 
-#### Data Migration
+  | Disk type | Maximum disk size | Maximum throughput | Maximum IOPS | Description |
+  | --- | --- | --- | --- | --- |
+  | Standard HDD | 32 GB | 500 MB/s | 2,000 | HDD-based. |
+  | Standard SSD | 32 GB | 750 MB/s | 6,000 | SSD-based. |
+  | Premium SSD | 32 GB | 900 MB/s | 20,000 | SSD-based. |
+  | Premium SSD v2 | 64 GB | 1,200 MB/s | 80,000 | SSD-based; cannot be used as an OS disk. |
+  | Ultra Disk | 64 GB | 10,000 MB/s | 400,000 | SSD-based; cannot be used as an OS disk. |
+2. Azure App Service
+   - App Service plan: Defines settings such as pricing tier, OS type, and redundancy. (It does not support multiple regions; **an App Service plan must be created for each region**.)
 
-1. Azure Migrate は、IT 環境全体をオンプレミス／他のクラウドから Azure へ移行するサービスです。
-    - VM
-    - Physical Server
-    - Database
-    - Web App
-    - Virtual Desktop
-2. AzCopy：**Blob／Files／Storage のデータをコピーする**
-3. Azure Data Share：データを他の組織／ユーザーと共有し、定期的に共有・更新する。
-4. Azure Import/Export：オフライン方式でオンプレミスの Storage と Azure Storage の間でデータを転送する。
-5. Azure Data Box：大量データの移送に使う、Microsoft が提供する物理デバイス。
+     | Plan | Description |
+     | --- | --- |
+     | Free | Free plan; no SLA. |
+     | Shared | More allocated resources than Free; no SLA. |
+     | Basic | For small workloads. |
+     | Standard | For medium-sized workloads. |
+     | Premium | For large workloads. |
+     | Isolated | Provides a fully isolated, dedicated environment using a virtual network. |
+   - Deployment slot: An Azure App Service feature that hosts multiple versions of an application simultaneously (App Service plan Standard or higher).
+     - **Hosts multiple versions of a single web app simultaneously.**
+     - **Available for App Service plans with SKUs Standard or higher.**
+     - **You can revert to the previous version by swapping the slot.**
+   - Service Connector: Connects Azure App Service to other Azure services.
+3. Azure Container Service
 
-#### データベース移行の設計
+![photo.heic](../images/az305-24.png)
 
-1. Azure Data Studio：Windows, macOS, Linuxで動作するデータベース管理ツールです。
-    - 標準でMicrosoft SQL ServerとAzure SQL databaseに対応し、OptionでMySQL, PostgreSQL, Azure Cosmos DBなどに対応します
-    - 「**Azure SQL移行拡張機能」をインストールすることで、Microsoft SQL ServerからAzure SQL DatabaseやAzure SQL Managed Instanceへの移行がサポートされる**
-    
-    ![image.png](../images/az305-31.png)
-    
-2. Azure Database Migration Service (DMS): データベース移行専用サービス。✔ **オフライン移行**に対応。✔ **一括移行（50 データベース）**に対応。
-    
-    ![image.png](../images/az305-32.png)
-    
-3. Data Migration Assistant (DMA) は、移行前の「評価ツール」および SQL Server 移行ツールです。
-4. SQL Server Migration Assistant (SSMA)：SQLServer**以外**（Microsoft Access, DB2, MySQL, Oracle, SAP ASE）からSQL Serverへの移行をサポートするツールです
-    
-    → Oracle、MySQL などの他のデータベースを
-    SQL Server に一括移行するためのツール
-    
-5. Azure Cosmos DB data migration toolを使用すると、**Azure Cosmos DB**に簡単にデータを移行することができます
+   - **Azure Container**
 
-| 項目 | Azure Data Studio | DMS | DMA | SSMA | Azure Migrate |
+![image.png](../images/az305-25.png)
+
+4. Serverless services: Services in which the cloud provider supplies the servers needed to run an app, so the user does not prepare servers.
+   - Azure Functions: **Serverless + event-driven**
+
+     | Pricing plan | Description |
+     | --- | --- |
+     | Consumption plan | On-demand pay-as-you-go based on the number and duration of executions. Maximum app execution time: 10 minutes. |
+     | Dedicated hosting plan | Fixed-price plan that provides dedicated resources to run the app. Maximum app execution time: 10 minutes. |
+     | Premium plan | A type of consumption plan with additional features, such as virtual network access. Maximum app execution time is extended to 30 minutes. |
+
+![image.png](../images/az305-26.png)
+
+5. Batch processing services:
+   - Azure Batch: Ideal for moving cloud-optimized high-performance computing (HPC) workloads running on-premises to the cloud. It efficiently runs large-scale parallel processing and HPC applications, and provides job scheduling, automatic compute resource scaling, and task management.
+   - Node types:
+
+     | Type | Description |
+     | --- | --- |
+     | Low-priority VM | Low-cost VM using Azure spare capacity. Suitable for short-running, non-time-critical tasks such as development environments. |
+     | Spot VM | Similar to low-priority VMs. Low-priority VMs are being retired, so migration to Spot VMs is recommended. |
+     | Dedicated VM | Dedicated virtual machine, suitable for long-running production tasks. |
+
+     In Azure Batch, you can manage the pool yourself or let Azure Batch manage it. This is determined by the “pool allocation mode” specified when creating the pool.
+
+     | Type | Description |
+     | --- | --- |
+     | User Subscription | The user manages the pool and specifies VM sizes and counts. Dedicated or Spot VMs can be used. The Azure Hybrid Benefit can be used to apply on-premises Windows Server licenses in Azure. |
+     | Batch Service | The default mode, in which Azure Batch manages the pool. Dedicated or low-priority VMs can be used. |
+   - **Azure CycleCloud: Deploys and manages large HPC clusters. It can use industry-standard third-party schedulers, making migration from on-premises easier.**
+
+![image.png](../images/az305-27.png)
+
+#### Design application architecture
+
+1. Messaging architecture
+   - Azure Queue Storage: A one-to-one service between sender and receiver.
+     - Enables **asynchronous communication** for transactions between cloud services.
+   - Azure Service Bus: When there are multiple receivers, configure a single Azure Service Bus topic to send and receive messages using the publish/subscribe (Pub/Sub) pattern. **Service Bus queues provide one-to-one communication; Service Bus topics provide one-to-many communication.**
+     - Enables **asynchronous communication** for transactions between cloud services.
+     - Enabling sessions on an Azure Service Bus queue guarantees FIFO (first in, first out), so messages are received in the order they were sent.
+2. Event-driven architecture
+
+![image.png](../images/az305-28.png)
+
+3. Cache solutions
+
+   There are two types of caches, depending on where they are placed:
+
+   1. Content cache: Placed between the client and web app to cache web content such as HTML pages.
+   2. Data cache: Placed between the web app and database to cache data such as database contents.
+
+   - Azure Content Delivery Network: Azure CDN caches web content at distribution servers called PoPs around the world. ⭐ **For web content.**
+   - Azure Cache for Redis: An in-memory database that caches all data in memory for fast processing. ⭐ **For database/application data.**
+4. Integration solutions
+   - Azure API Management: Centrally manages and protects API requests to backend services provided by apps on virtual machines or containers, Azure Functions, and other services.
+     - Azure API Management has several pricing tiers. The Premium tier supports virtual networks.
+     - **Azure API Management:**
+       - Needed for **API rate limiting**.
+       - Needed to support external/third-party authentication.
+       - Needed when backend services (such as Logic Apps/Function Apps) should not be changed.
+       - OAuth/JWT (JSON Web Token) validation.
+
+![image.png](../images/az305-29.png)
+
+![image.png](../images/az305-30.png)
+
+   - **Azure Logic Apps:** A service for easily creating workflows that connect multiple cloud services on the internet. **Workflow automation.**
+     - **Overview**: A **low-code/no-code workflow orchestration tool**. Connects multiple systems/services using **visual drag-and-drop**.
+     - **Features**:
+       - Includes hundreds of **connectors** for services such as Office 365, SharePoint, Salesforce, SQL Server, and Twitter.
+       - Suitable for **business process automation** and can be used without writing code (though code can also be written).
+       - Has more features than Functions and is suitable for complex, multi-step business processes.
+     - **Typical example**: “When a file is uploaded to SharePoint, email the manager → after approval, automatically register it in a SQL database”—a multi-step business workflow.
+     - **Difference from Functions**:
+       - Functions: **Write code**; suitable for a single technical or logical task.
+       - Logic Apps: **Configure with drag and drop**; suitable for coordinating business workflows and integrating multiple SaaS systems.
+     - **In one sentence**: **“Connect multiple systems with drag and drop, without writing code.”**
+5. Application configuration management solutions
+   - Azure App Configuration and Azure Key Vault both manage settings and parameters. Azure App Configuration specializes in managing app configuration; Azure Key Vault specializes in managing secrets.
+
+#### Data migration
+
+1. Azure Migrate migrates an entire IT environment from on-premises or another cloud to Azure.
+   - VMs
+   - Physical servers
+   - Databases
+   - Web apps
+   - Virtual desktops
+2. AzCopy: **Copies Blob/Files/Storage data.**
+3. Azure Data Share: Shares data with other organizations/users and shares and updates it periodically.
+4. Azure Import/Export: Transfers data offline between on-premises storage and Azure Storage.
+5. Azure Data Box: A physical device provided by Microsoft for transferring large amounts of data.
+
+#### Design database migrations
+
+1. Azure Data Studio: A database management tool that runs on Windows, macOS, and Linux.
+   - Supports Microsoft SQL Server and Azure SQL Database by default; MySQL, PostgreSQL, Azure Cosmos DB, and others are available as options.
+   - Installing the **Azure SQL migration extension** supports migration from Microsoft SQL Server to Azure SQL Database or Azure SQL Managed Instance.
+
+![image.png](../images/az305-31.png)
+
+2. Azure Database Migration Service (DMS): A dedicated database migration service. ✔ Supports **offline migration**. ✔ Supports **bulk migration (50 databases)**.
+
+![image.png](../images/az305-32.png)
+
+3. Data Migration Assistant (DMA) is a pre-migration assessment tool and a SQL Server migration tool.
+4. SQL Server Migration Assistant (SSMA): A tool that supports migration from **non-SQL Server** sources (Microsoft Access, DB2, MySQL, Oracle, SAP ASE) to SQL Server.
+
+   → A tool for bulk migration of other databases such as Oracle and MySQL to SQL Server.
+
+5. The Azure Cosmos DB data migration tool makes it easy to migrate data to **Azure Cosmos DB**.
+
+| Task | Azure Data Studio | DMS | DMA | SSMA | Azure Migrate |
 | --- | --- | --- | --- | --- | --- |
-| 移行の調査を行う | ⭕️ |  | ⭕️ |  | ⭕️ |
-| SQL ServerからAzure SQL Databaseへ移行する | ⭕️ | ⭕️ | ⭕️ |  |  |
-| SQL ServerからAzure仮想マシン上のSQL Serverへ移行する |  |  | ⭕️ |  |  |
-| SQL ServerからAzure仮想マシン上のSQL Serverへシフトする |  |  |  |  | ⭕️ |
-| 非SQL Objectを移行する |  |  |  | ⭕️ |  |
-| Open Source Dataを移行する |  | ⭕️ |  |  |  |
+| Assess migration | ⭕️ |  | ⭕️ |  | ⭕️ |
+| Migrate SQL Server to Azure SQL Database | ⭕️ | ⭕️ | ⭕️ |  |  |
+| Migrate SQL Server to SQL Server on an Azure VM |  |  | ⭕️ |  |  |
+| Shift SQL Server to SQL Server on an Azure VM |  |  |  |  | ⭕️ |
+| Migrate non-SQL objects |  |  |  | ⭕️ |  |
+| Migrate open-source data |  | ⭕️ |  |  |  |
 
-#### ネットワークソリューションの設計
+#### Design networking solutions
 
-1. 仮想ネットワーク：仮想ネットワークは、リージョンごとに作成される
-2. インターネット接続ソリューション：インターネットからの受信方向の通信するため
-    - パブリックIPアドレス
-    - Azure Load Balancer：仮想マシンの死活監視と負荷分散を行う
-    - Azure Application Gateway
-    - Azure NAT Gateway: アウトバウンド専用＋⭐ **プライベート VM からインターネットへ接続する**
-    
-    ![image.png](../images/az305-33.png)
-    
-3. オンプレミスネットワーク接続ソリューション：
-    - Azure VPN Gateway：仮想ネットワークに配置するVPNデバイス
-        
-        ![image.png](../images/az305-34.png)
-        
-    - Azure ExpressRoute：オンプレミス ↔ Azure のプライベート接続。インターネット VPN と比べ、「高信頼性」「高速」「低遅延」という利点があります。
-        
-        ![image.png](../images/az305-35.png)
-        
-    - Azure ExpressRoute Global Reach：⭐ **異なるオンプレミス データセンター間を ExpressRoute／Microsoft ネットワーク経由で接続する**
-    - **Azure Virtual WAN:**
-        - **Azure Virtual WAN（仮想WAN）の種類には、Basic、Standardの2種類SKU (Stock Keeping Unit) があります**
-            - **Basicの仮想WANは、Site-to-Site VPNにのみ使用することができます**
-            - **ExpressRoute回線を含めるには、Standardにアップグレードする必要がある**
-        - リージョンごとに作成する「仮想ハブ」と呼ばれるルーターを起点にして、Azure VPN GatewayによるインターネットVPN接続やAzure ExpressRouteによるプライベート接続な一元的に管理します
-        
-        ![image.png](../images/az305-36.png)
-        
-    - セキュリティ保護付きハブ：Azure Virtual WANの仮装ハブはオプション追加機能：Azure Firewall、ネットワーク仮想アプライアンス、SaaSソリューション
+1. Virtual network: A virtual network is created for each region.
+2. Internet connectivity solutions: For inbound traffic from the internet.
+   - Public IP address.
+   - Azure Load Balancer: Performs health probes and load-balances virtual machines.
+   - Azure Application Gateway.
+   - Azure NAT Gateway: Outbound only + ⭐ **connects private VMs to the internet.**
+
+![image.png](../images/az305-33.png)
+
+3. On-premises network connectivity solutions:
+   - Azure VPN Gateway: A VPN device deployed in a virtual network.
+
+![image.png](../images/az305-34.png)
+
+   - Azure ExpressRoute: A private connection between on-premises and Azure. Compared with an internet VPN, it offers “higher reliability,” “higher speed,” and “lower latency.”
+
+![image.png](../images/az305-35.png)
+
+   - Azure ExpressRoute Global Reach: ⭐ **Connects separate on-premises datacenters through ExpressRoute/the Microsoft network.**
+   - **Azure Virtual WAN:**
+     - **Azure Virtual WAN has two SKU (Stock Keeping Unit) types: Basic and Standard.**
+       - **Basic Virtual WAN can be used only for Site-to-Site VPN.**
+       - **Upgrade to Standard to include ExpressRoute circuits.**
+     - Centrally manages internet VPN connections using Azure VPN Gateway and private connections using Azure ExpressRoute, using regionally deployed routers called “virtual hubs.”
+
+![image.png](../images/az305-36.png)
+
+   - Secured hub: Optional features for an Azure Virtual WAN virtual hub include Azure Firewall, network virtual appliances, and SaaS solutions.
 4. Azure Private Link
-    
-    ![image.png](../images/az305-37.png)
-    
-    - Azure Monitor Private Link Scope：
-    
-    ![image.png](../images/az305-38.png)
-    
-5. ネットワークパフォーマンスの最適化
-    - 高速ネットワーク (AccelNet)：「シングルルートI/O仮想化 SR-IOV」と呼ばれる技術を使用し、ネットワークパフォーマンスを大幅に向上させるものです
-    - Receive Side Scaling (RSS)：複数の CPU コアに処理を分散する
-    - Proximity Placement Group：⭐ **物理的にできるだけ近い場所に配置する**
-6. ネットワークセキュリティーの最適化
-    - Azure DDoS Protection：「パブリックIPアドレスレベル」「仮想ネットワークレベル保護」
-    - Azure Web Application Firewall：Azure WAFは「サービス」ではなく「機能」です。Azure WAFを有効化できるサービス例を以下に示します：
-        - Azure Application Gateway
-        - Azure Front Door
-        - Azure Content Delivery Network (CDN): コンテンツをキャッシュする（静的リソースを高速化）
-            - Azure CDN エンドユーザーの近くにコンテンツを保管
-            - Azure Cache for Redis: アプリケーションの近くにコンテンすを保管
-            
-            ![image.png](../images/az305-39.png)
-            
-    - **Network Security Group：送信元と宛先それぞれのIPアドレスとポート番号、およびプロトコル種類を条件に、許可または拒否を設定します**
-    - **Azure Firewall: Azure Firewall policy must be in the same region**
-    - Azure Firewall manager：複数のリージョンやサブスクリプションにまたがるAzure Firewallインスタンスのデプロイと一元管理を行います
+
+![image.png](../images/az305-37.png)
+
+   - Azure Monitor Private Link Scope:
+
+![image.png](../images/az305-38.png)
+
+5. Optimize network performance
+   - Accelerated Networking (AccelNet): Uses a technology called Single Root I/O Virtualization (SR-IOV) to significantly improve network performance.
+   - Receive Side Scaling (RSS): Distributes processing across multiple CPU cores.
+   - Proximity Placement Group: ⭐ **Places resources as close together physically as possible.**
+6. Optimize network security
+   - Azure DDoS Protection: “Public IP address-level” and “virtual network-level” protection.
+   - Azure Web Application Firewall: Azure WAF is a **feature**, not a “service.” Examples of services where Azure WAF can be enabled:
+     - Azure Application Gateway.
+     - Azure Front Door.
+     - Azure Content Delivery Network (CDN): Caches content (speeds up static resources).
+       - Azure CDN stores content close to end users.
+       - Azure Cache for Redis stores content close to the application.
+
+![image.png](../images/az305-39.png)
+
+   - **Network Security Group: Allows or denies traffic based on source and destination IP addresses, port numbers, and protocol types.**
+   - **Azure Firewall: The Azure Firewall policy must be in the same region.**
+   - Azure Firewall Manager: Deploys and centrally manages Azure Firewall instances across multiple regions and subscriptions.
